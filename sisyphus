@@ -383,3 +383,5 @@ if __name__ == "__main__":
         try_load_plugin(pluginname)
 
     sys.exit(main())
+
+# vim: set expandtabs

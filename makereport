@@ -204,7 +204,9 @@ def make_test(environment, filename, default_factory=None):
         test = factory(environment, filename)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
-        sys.stderr.write("Couldn't create test '%s': %s\n%s\n" % (filename, e, traceback.format_exc(tb)))
+        sys.stderr.write("Couldn't create test '%s': %s\n" % (filename, e))
+        if environment.debug:
+            sys.stderr.write(traceback.format_exc(tb))
         return None
     if test is None:
         sys.stderr.write("Factory returned None for test '%s'\n" % filename)

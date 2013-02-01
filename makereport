@@ -4,7 +4,7 @@ from datetime                import datetime
 from glob                    import iglob as glob
 from test.test               import ensure_dir
 from urllib                  import urlopen
-from util.concurrent.futures import ProcessPoolExecutor
+from util.concurrent.futures import ThreadPoolExecutor
 import fnmatch
 import imp
 import multiprocessing
@@ -270,12 +270,10 @@ def makereport(config, args):
         expectations = {}
 
     tests = config.create_testset(config, args)
-    # Avoid problems when pickling this function in multiprocessing...
-    config.create_testset = None
 
     # create test futures for parallel evaluation
     queue    = list()
-    executor = ProcessPoolExecutor(max_workers=config.threads)
+    executor = ThreadPoolExecutor(max_workers=config.threads)
     for test in tests:
         queue.append(executor.submit(run_test, test))
 

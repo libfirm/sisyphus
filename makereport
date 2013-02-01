@@ -318,6 +318,8 @@ def main():
     _opts.set_defaults(create_testset=default_create_testset)
 
     config, args = _opts.parse_args()
+    if not args:
+        args = ['.']
     makereport(config, args)
     return _rc
 

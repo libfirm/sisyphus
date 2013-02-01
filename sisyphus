@@ -222,8 +222,11 @@ def make_tests_from_dir(environment, directory):
     global _wildcard_factories
     names = []
     for (wildcard, default_factory) in _wildcard_factories:
+        directory = os.path.normpath(directory)
+        print directory+"/**/"+wildcard
+        for name in glob(directory+"/"+wildcard):
+            names.append((name, default_factory))
         for name in glob(directory+"/**/"+wildcard):
-            name = os.path.normpath(name)
             names.append((name, default_factory))
     tests = []
     for (name, default_factory) in names:

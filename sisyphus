@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
@@ -223,7 +223,6 @@ def make_tests_from_dir(environment, directory):
     names = []
     for (wildcard, default_factory) in _wildcard_factories:
         directory = os.path.normpath(directory)
-        print directory+"/**/"+wildcard
         for name in glob(directory+"/"+wildcard):
             names.append((name, default_factory))
         for name in glob(directory+"/**/"+wildcard):

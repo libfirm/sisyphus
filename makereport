@@ -17,7 +17,7 @@ _report_name    = "stats-" + datetime.now().strftime("%Y.%m.%d")
 _configurations = dict()
 _out            = sys.stdout
 
-_opts = optparse.OptionParser(version="%prog 0.1", usage="%prog [options]")
+_opts = optparse.OptionParser(version="%prog 0.2", usage="%prog [options]")
 _opts.set_defaults(
     debug=False,
     verbose=False,
@@ -31,24 +31,8 @@ _opts.set_defaults(
     ldflags="-lm",
     arch_ldflags="-m32",
     expect_url="http://pp.info.uni-karlsruhe.de/git/firm-testresults/plain/fail_expectations-i686-linux-gnu",
-    default_dirs=[
-        "backend",
-        "opt",
-        "C",
-        "C/pragmatic",
-        "C/should_fail",
-        "C/should_warn",
-        "C/nowarn",
-        "C/gnu99",
-        "C++/should_fail",
-        "ack",
-        "langshootout",
-        "llvm",
-        "gcc"
-    ],
-    arch_dirs=[
-        "x86code"
-    ],
+    default_dirs=[ ],
+    arch_dirs=[ ],
     runexe="")
 _opts.add_option("-d", "--debug", dest="debug", action="store_true",
                  help="Enable debug messages")

@@ -376,7 +376,8 @@ if __name__ == "__main__":
     pluginlist  = []
     pluginlist += list(glob("plugins/*.py"))
     pluginlist += list(glob(sys.path[0]+"/plugins/*.py"))
-    pluginlist += list(glob("*/reportplugin.py"))
+    pluginlist += list(glob("reportplugin.py"))
+    pluginlist += list(glob("**/reportplugin.py"))
     pluginlist += list(glob("configs/*.py"))
     pluginlist += list(glob(sys.path[0]+"configs/*.py"))
     for pluginname in pluginlist:

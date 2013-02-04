@@ -114,10 +114,7 @@ test_factories = [
     ( lambda name: is_c_file(name) and "C/gnu99/"         in name, make_make_c_test_cflags(" -std=gnu99") ),
     ( lambda name: is_c_file(name) and "C/MS/"            in name, make_make_c_test_cflags(" --ms") ),
     ( lambda name: is_c_file(name) and "C/"               in name, make_make_c_test_cflags(" -std=c99") ),
-]
-wildcard_factories = [
-    ( "*.c",  make_c_test ),
-    ( "*.cc", make_c_test ),
+    ( lambda name: is_c_file(name)                               , make_c_test ),
 ]
 
 def register_options(opts):

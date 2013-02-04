@@ -18,10 +18,6 @@ def make_optitest(environment, filename):
 
     return test
 
-wildcard_factories = [
-    ( "*.ir", make_optitest ),
-]
-
 def config_optitest(option, opt_str, value, parser):
     config = parser.values
     config.default_dirs = [ "optitest" ]

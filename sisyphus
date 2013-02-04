@@ -54,11 +54,6 @@ _opts.add_option("--show-disappeared", dest="show_disappeared",
 # if matchfunc(filename) returns True then factory(filename, environment) will
 # be used to construct a Test for this file.
 _test_factories = []
-# List of (wildcard, default_factory) tuples.
-# If a user specifies a directory, then we will construct tests for files
-# matching "directory/wildcard" and use a factory from the test_factories list,
-# if none is found default_factory(filename, environment).
-_wildcard_factories = []
 
 _console_red    = "\033[1;31m"
 _console_green  = "\033[1;32m"
@@ -180,7 +175,6 @@ class Report:
 def make_test(environment, filename, default_factory=None):
     """Given a filename create a new Test object"""
     global _test_factories
-    global _wildcard_factories
     # Each test gets its own environment
     environment = deepcopy(environment)
 
@@ -190,14 +184,9 @@ def make_test(environment, filename, default_factory=None):
         if test(filename):
             factory = tfactory
             break
-    # try wildcard factories
     if factory is None:
-        for (pattern, tfactory) in _wildcard_factories:
-            if fnmatch.fnmatch(filename, pattern):
-                factory = tfactory
-                break
-    if factory is None:
-        sys.stderr.write("Couldn't determine Test factory for '%s'\n" % filename)
+        if environment.debug:
+             sys.stderr.write("Couldn't determine Test factory for '%s'\n" % filename)
         return None
 
     try:
@@ -219,17 +208,15 @@ def make_test(environment, filename, default_factory=None):
 
 
 def make_tests_from_dir(environment, directory):
-    global _wildcard_factories
     names = []
-    for (wildcard, default_factory) in _wildcard_factories:
-        directory = os.path.normpath(directory)
-        for name in glob(directory+"/"+wildcard):
-            names.append((name, default_factory))
-        for name in glob(directory+"/**/"+wildcard):
-            names.append((name, default_factory))
+    directory = os.path.normpath(directory)
+    for name in glob(directory+"/*"):
+        names.append(name)
+    for name in glob(directory+"/**/*"):
+        names.append(name)
     tests = []
-    for (name, default_factory) in names:
-        test = make_test(environment, name, default_factory)
+    for name in names:
+        test = make_test(environment, name)
         if test:
             tests.append(test)
     return tests
@@ -329,7 +316,6 @@ def main():
 
 def try_load_plugin(filename):
     global _test_factories
-    global _wildcard_factories
     global _configurations
     global _opts
 
@@ -354,13 +340,6 @@ def try_load_plugin(filename):
 
         if hasattr(plugin, "test_factories"):
             _test_factories += plugin.test_factories
-        if hasattr(plugin, "wildcard_factories"):
-            for (wildcard, default_factory) in plugin.wildcard_factories:
-                for (ewildcard, _) in _wildcard_factories:
-                    if ewildcard == wildcard:
-                        sys.stderr.write("Warning: plugin '%s' provides a second factory for wildcard '%s'\n" % (filename, ewildcard))
-                        break
-            _wildcard_factories += plugin.wildcard_factories
         if hasattr(plugin, "configurations"):
             for (config, setup) in plugin.configurations.iteritems():
                 if config in _configurations:
@@ -382,10 +361,10 @@ if __name__ == "__main__":
     pluginlist += list(glob("reportplugin.py"))
     pluginlist += list(glob("**/reportplugin.py"))
     pluginlist += list(glob("configs/*.py"))
-    pluginlist += list(glob(sys.path[0]+"configs/*.py"))
+    pluginlist += list(glob(sys.path[0]+"/configs/*.py"))
     for pluginname in pluginlist:
         try_load_plugin(pluginname)
 
     sys.exit(main())
 
-# vim: set expandtabs
+# vim: expandtab ts=4 st=4 sw=4

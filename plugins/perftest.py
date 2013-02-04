@@ -125,3 +125,5 @@ configurations = {
     "leonperf_hwfloat": config_leonperf_hwfloat,
     "leonperf":         config_leonperf,
 }
+
+# vim: expandtab ts=4 st=4 sw=4

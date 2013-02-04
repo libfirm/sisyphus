@@ -78,3 +78,5 @@ def parse_embedded_commands(environment, filename):
             if subcheckers:
                 checkers += subcheckers
     return checkers
+
+# vim: expandtab ts=4 st=4 sw=4

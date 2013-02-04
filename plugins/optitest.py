@@ -27,3 +27,5 @@ def config_optitest(option, opt_str, value, parser):
 configurations = {
     'optitest': config_optitest
 }
+
+# vim: expandtab ts=4 st=4 sw=4

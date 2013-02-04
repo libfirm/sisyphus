@@ -128,3 +128,5 @@ def create_check_warnings_reference(environment):
     else:
         reference = open(warnings_file, "rb").read()
         return partial(_help_check_warnings_reference, reference=reference)
+
+# vim: expandtab ts=4 st=4 sw=4

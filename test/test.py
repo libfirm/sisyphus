@@ -59,3 +59,5 @@ class Test(object):
                 self.success = False
                 self.result  = "%s: %s" % (step.name, stepresult.error)
                 break
+
+# vim: expandtab ts=4 st=4 sw=4

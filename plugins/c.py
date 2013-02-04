@@ -140,3 +140,5 @@ def register_options(opts):
         ldflags="-lm",
         arch_ldflags="-m32"
     )
+
+# vim: expandtab ts=4 st=4 sw=4

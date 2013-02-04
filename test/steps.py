@@ -53,3 +53,5 @@ def step_execute(environment):
         environment.executionargs = ""
     cmd = "%(runexe)s%(executable)s%(executionargs)s" % environment.__dict__
     return execute(environment, cmd, timeout=30)
+
+# vim: expandtab ts=4 st=4 sw=4

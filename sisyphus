@@ -209,11 +209,10 @@ def make_test(environment, filename, default_factory=None):
 
 def make_tests_from_dir(environment, directory):
     names = []
-    directory = os.path.normpath(directory)
     for name in glob(directory+"/*"):
-        names.append(name)
+        names.append(os.path.normpath(name))
     for name in glob(directory+"/**/*"):
-        names.append(name)
+        names.append(os.path.normpath(name))
     tests = []
     for name in names:
         test = make_test(environment, name)

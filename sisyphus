@@ -2,7 +2,7 @@
 from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
-from test.test               import ensure_dir
+from test.test               import ensure_dir, annotated_test_factories
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
 import fnmatch
@@ -337,6 +337,7 @@ def try_load_plugin(filename):
             plugin = imp.load_module(modulename, file, filename,
                                      ("py", "r", imp.PY_SOURCE))
 
+        _test_factories += annotated_test_factories
         if hasattr(plugin, "test_factories"):
             _test_factories += plugin.test_factories
         if hasattr(plugin, "configurations"):

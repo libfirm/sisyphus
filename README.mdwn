@@ -1,0 +1,39 @@
+# Sisyphus
+
+A compiler regression testing tool.
+
+## How to Use
+
+We assume you have a directory full of test programs.  To configure
+sisyphus for your test programs, you have to write a plugin, unless
+our included plugins are sufficient.  Put the plugin into the program
+directory as well, sisyphus fill find it automatically.
+
+Now let sisyphus run.  It will test all your programs according to
+your plugin.
+
+## Why
+
+A simple shell script can do the job just as well, does it?  Dependending
+on your requirements that might be true.  We also started like that.
+Then the script got more and more complicated until it was rewritten
+in Python.  A few more extensions and rewrites and sisyphus emerged.
+A few features your shell script might not have:
+
+ * An expectation file, possibly from a URL, to distuingish between expected and unexpected failures.
+   This means you notice, when you accidentally fix a long standing bug.
+ * Parallel execution of test, but limited to the number of cores on the machine.
+ * Options for cross-compilation, qemu, valgrind, and performance checks
+
+## Concepts
+
+A single test is represented by a file.  Test factories generate a test
+for each file.  Those factories also associate a list of steps to perform
+with the file.  Each step in turn has a list of checks associated.
+
+There might be additional files (reference output, header files, etc),
+which should be ignored by the factories.
+
+## Licence
+
+TODO ...

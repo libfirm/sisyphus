@@ -37,9 +37,10 @@ class Test(object):
         self.steps       = []
         self.environment = environment
 
-    def add_step(self, name, func):
-        step = TestStep(name, func)
+    def add_step(self, name, step_func, checks=[]):
+        step = TestStep(name, step_func)
         self.steps.append(step)
+        step.add_checks(checks)
         return step
 
     def run(self):

@@ -14,12 +14,14 @@ def check_valgrind_perf(result):
     else:
         result.error = m.group(1)
 
+
 def check_qemu_perf(result):
     m = re.search('Instructions:\s*([0-9]+)', result.stderr)
     if not m:
         result.error = "Couldn't parse qemu result"
     else:
         result.error = m.group(1)
+
 
 def make_perftest(environment, filename, size, check_perf):
     setup_c_environment(environment, filename)
@@ -29,15 +31,16 @@ def make_perftest(environment, filename, size, check_perf):
         environment.executionargs = " %s" % size
 
     test = Test(environment, filename)
-    compile = test.add_step("compile", step_compile_c)
-    compile.add_check(check_cparser_problems)
-    compile.add_check(check_no_errors)
-    compile.add_check(check_firm_problems)
-    compile.add_check(check_retcode_zero)
-
-    execute = test.add_step("execute", step_execute)
-    execute.add_check(check_retcode_zero)
-    execute.add_check(check_perf)
+    test.add_step("compile", step_compile_c, checks=[
+        check_cparser_problems,
+        check_no_errors,
+        check_firm_problems,
+        check_retcode_zero,
+    ])
+    test.add_step("execute", step_execute, checks=[
+        check_retcode_zero,
+        check_perf,
+    ])
     return test
 
 sizes = {

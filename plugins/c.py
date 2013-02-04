@@ -39,23 +39,23 @@ def make_c_test(environment, filename):
     ensure_dir(os.path.dirname(environment.executable))
 
     test = Test(environment, filename)
-
-    compile = test.add_step("compile", step_compile_c)
-    compile.add_check(check_cparser_problems)
-    compile.add_check(check_no_errors)
-    compile.add_check(check_firm_problems)
-    compile.add_check(check_retcode_zero)
+    test.add_step("compile", step_compile_c, checks=[
+        check_cparser_problems,
+        check_no_errors,
+        check_firm_problems,
+        check_retcode_zero,
+    ])
 
     asmchecks = parse_embedded_commands(environment, environment.filename)
     if asmchecks:
         environment.asmfile = environment.builddir + "/" + environment.filename + ".s"
         ensure_dir(os.path.dirname(environment.asmfile))
-        asm = test.add_step("asm", step_compile_c_asm)
-        asm.add_checks(asmchecks)
+        test.add_step("asm", step_compile_c_asm, checks=asmchecks)
 
-    execute = test.add_step("execute", step_execute)
-    execute.add_check(check_retcode_zero)
-    execute.add_check(create_check_reference_output(environment))
+    test.add_step("execute", step_execute, checks=[
+        check_retcode_zero,
+        create_check_reference_output(environment),
+    ])
     return test
 
 @test_factory(lambda name: is_c_file(name) and "C/should_fail/" in name)
@@ -65,9 +65,9 @@ def make_c_should_fail(environment, filename):
     parse_embedded_commands_no_check(environment)
 
     test = Test(environment, filename)
-    compile = test.add_step("compile", step_compile_c_syntax_only)
-    compile.add_check(check_missing_errors)
-    test.steps.append(compile)
+    test.add_step("compile", step_compile_c_syntax_only, checks=[
+        check_missing_errors,
+    ])
     return test
 
 def parse_embedded_commands_no_check(environment):
@@ -82,10 +82,11 @@ def make_c_should_warn(environment, filename):
     parse_embedded_commands_no_check(environment)
 
     test = Test(environment, filename)
-    compile = test.add_step("compile", step_compile_c_syntax_only)
-    compile.add_check(check_retcode_zero)
-    compile.add_check(check_no_errors)
-    compile.add_check(create_check_warnings_reference(environment))
+    test.add_step("compile", step_compile_c_syntax_only, checks=[
+        check_retcode_zero,
+        check_no_errors,
+        create_check_warnings_reference(environment),
+    ])
     return test
 
 @test_factory(lambda name: is_c_file(name) and "C/nowarn/" in name)
@@ -95,10 +96,11 @@ def make_c_should_not_warn(environment, filename):
     parse_embedded_commands_no_check(environment)
 
     test = Test(environment, filename)
-    compile = test.add_step("compile", step_compile_c_syntax_only)
-    compile.add_check(check_retcode_zero)
-    compile.add_check(check_no_errors)
-    compile.add_check(check_no_warnings)
+    test.add_step("compile", step_compile_c_syntax_only, checks=[
+        check_retcode_zero,
+        check_no_errors,
+        check_no_warnings,
+    ])
     return test
 
 @test_factory(lambda name: is_c_file(name) and "C/gnu99/" in name)

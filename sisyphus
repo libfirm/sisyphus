@@ -362,5 +362,3 @@ if __name__ == "__main__":
         try_load_plugin(pluginname)
 
     sys.exit(main())
-
-# vim: expandtab ts=4 st=4 sw=4

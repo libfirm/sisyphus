@@ -1,0 +1,9 @@
+"Project specific vim settings
+set tabstop=8
+set expandtab
+set shiftwidth=4
+set softtabstop=4
+
+" If you want this loaded automatically, use the localvimrc plugin:
+" > curl http://www.vim.org/scripts/download_script.php?src_id=18689 -o localvimrc.vba
+" > vim localvimrc.vba -c "so %" -c "q"

@@ -91,32 +91,29 @@ def create_performance_testset(config, args):
         tests.append(test)
     return tests
 
-def config_valgrind(option, opt_str, value, parser):
-    config = parser.values
-    config.runexe         = "valgrind --tool=callgrind "
-    config.create_testset = create_performance_testset
-    config.default_dirs   = []
-    config.arch_dirs      = []
+def config_valgrind(argparser, namespace, values, option_string):
+    namespace.runexe         = "valgrind --tool=callgrind "
+    namespace.create_testset = create_performance_testset
+    namespace.default_dirs   = []
+    namespace.arch_dirs      = []
 
-def config_leonperf(option, opt_str, value, parser):
-    config_valgrind(option, opt_str, value, parser)
-    config = parser.values
-    config.arch_cflags   = " -msoft-float"
-    config.arch_ldflags += " -static -msoft-float"
-    config.runexe        = "qemu-count -r 2.6.40 "
-    if "cparser" in config.cc:
-        config.arch_cflags += " -mtarget=sparc-leon-linux-gnu"
+def config_leonperf(argparser, namespace, values, option_string):
+    config_valgrind(argparser, namespace, values, option_string)
+    namespace.arch_cflags   = " -msoft-float"
+    namespace.arch_ldflags += " -static -msoft-float"
+    namespace.runexe        = "qemu-count -r 2.6.40 "
+    if "cparser" in namespace.cc:
+        namespace.arch_cflags += " -mtarget=sparc-leon-linux-gnu"
     for b in floatheavy:
         sizes[b] /= 30
 
-def config_leonperf_hwfloat(option, opt_str, value, parser):
-    config_valgrind(option, opt_str, value, parser)
-    config = parser.values
-    config.arch_cflags   = " -msoft-float"
-    config.arch_ldflags += " -static -msoft-float"
-    config.runexe        = "qemu-count -r 2.6.40 "
-    if "cparser" in config.cc:
-        config.arch_cflags += " -mtarget=sparc-leon-linux-gnu"
+def config_leonperf_hwfloat(argparser, namespace, values, option_string):
+    config_valgrind(argparser, namespace, values, option_string)
+    namespace.arch_cflags   = " -msoft-float"
+    namespace.arch_ldflags += " -static -msoft-float"
+    namespace.runexe        = "qemu-count -r 2.6.40 "
+    if "cparser" in namespace.cc:
+        namespace.arch_cflags += " -mtarget=sparc-leon-linux-gnu"
     for b in floatheavy:
         sizes[b] /= 30
 

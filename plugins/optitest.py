@@ -18,11 +18,10 @@ def make_optitest(environment, filename):
 
     return test
 
-def config_optitest(option, opt_str, value, parser):
-    config = parser.values
-    config.default_dirs = [ "optitest" ]
-    config.arch_dirs    = [ ]
-    config.expect_url   = "fail_expectations_optitest"
+def config_optitest(argparser, namespace, values, option_string):
+    namespace.default_dirs = [ "optitest" ]
+    namespace.arch_dirs    = [ ]
+    namespace.expect_url   = "fail_expectations_optitest"
 
 configurations = {
     'optitest': config_optitest

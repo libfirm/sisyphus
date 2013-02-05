@@ -1,10 +1,9 @@
-def config_leonf(option, opt_str, value, parser):
-    config = parser.values
-    config.arch_dirs    = ["sparccode"]
-    config.arch_cflags  = "-mtarget=sparc-leon-linux-gnu -bspiller=daemel -bregalloc=pref"
-    config.arch_ldflags = "-static"
-    config.runexe       = "qemu-sparc -r 2.6.40 "
-    config.expect_url   = "fail_expectations_sparc_leonf"
+def config_leonf(argparser, namespace, values, option_string):
+    namespace.arch_dirs    = ["sparccode"]
+    namespace.arch_cflags  = "-mtarget=sparc-leon-linux-gnu -bspiller=daemel -bregalloc=pref"
+    namespace.arch_ldflags = "-static"
+    namespace.runexe       = "qemu-sparc -r 2.6.40 "
+    namespace.expect_url   = "fail_expectations_sparc_leonf"
 
 configurations = {
     "leonf": config_leonf

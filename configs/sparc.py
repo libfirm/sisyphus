@@ -1,10 +1,9 @@
-def config_sparc(option, opt_str, value, parser):
-    config = parser.values
-    config.arch_dirs    = ["sparccode"]
-    config.arch_cflags  = "-mtarget=sparc-linux-gnu"
-    config.arch_ldflags = "-static"
-    config.runexe       = "qemu-sparc32plus "
-    config.expect_url   = "fail_expectations_sparc"
+def config_sparc(argparser, namespace, values, option_string):
+    namespace.arch_dirs    = ["sparccode"]
+    namespace.arch_cflags  = "-mtarget=sparc-linux-gnu"
+    namespace.arch_ldflags = "-static"
+    namespace.runexe       = "qemu-sparc32plus "
+    namespace.expect_url   = "fail_expectations_sparc"
 
 configurations = {
     'sparc': config_sparc

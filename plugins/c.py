@@ -119,21 +119,20 @@ def make_generic_test(environment, filename):
 def is_c_file(name):
     return name.endswith(".c") or name.endswith(".cc")
 
-def register_options(opts):
-    opts.add_option("--cflags", dest="cflags",
-                    help="Use CFLAGS to compile test programs",
-                    metavar="CFLAGS")
-    opts.add_option("--archcflags", dest="archcflags",
-                    help="Append ARCHCFLAGS to cflags", metavar="ARCHCFLAGS")
-    opts.add_option("--ldflags", dest="ldflags",
-                    help="Use LDFLAGS to compile test programs",
-                    metavar="LDFLAGS")
-    opts.add_option("--archldflags", dest="archldflags",
-                    help="Append ARCHLDFLAGS to LDFLAGS",
-                    metavar="ARCHLDFLAGS")
-    opts.add_option("--cc", dest="cc",
-                    help="Use CC to compile c programs", metavar="CC")
-    opts.set_defaults(
+def register_arguments(argparser):
+    group = argparser.add_argument_group("C language")
+    group.add_argument("--cc", dest="cc", metavar="CC",
+                       help="Use CC to compile c programs")
+    group.add_argument("--cflags", dest="cflags", metavar="CFLAGS",
+                       help="Use CFLAGS to compile test programs")
+    group.add_argument("--archcflags", dest="archcflags", metavar="ARCHCFLAGS",
+                       help="Append ARCHCFLAGS to cflags")
+    group.add_argument("--ldflags", dest="ldflags", metavar="LDFLAGS",
+                       help="Use LDFLAGS to compile test programs")
+    group.add_argument("--archldflags", dest="archldflags",
+                       metavar="ARCHLDFLAGS",
+                       help="Append ARCHLDFLAGS to LDFLAGS")
+    argparser.set_defaults(
         cc="cparser",
         cflags="-O3",
         arch_cflags="-march=native -m32",

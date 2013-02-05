@@ -8,17 +8,18 @@ from util.concurrent.futures import ThreadPoolExecutor
 import fnmatch
 import imp
 import multiprocessing
-import optparse
+import argparse
 import os
 import sys
 import traceback
 
+_version        = "0.2"
 _report_name    = "stats-" + datetime.now().strftime("%Y.%m.%d")
 _configurations = dict()
 _out            = sys.stdout
 
-_opts = optparse.OptionParser(version="%prog 0.2", usage="%prog [options]")
-_opts.set_defaults(
+_argparser = argparse.ArgumentParser()
+_argparser.set_defaults(
     debug=False,
     verbose=False,
     threads=multiprocessing.cpu_count() + 1,
@@ -29,22 +30,27 @@ _opts.set_defaults(
     expect_url="",
     default_dirs=[ ],
     arch_dirs=[ ],
-    runexe="")
-_opts.add_option("-d", "--debug", dest="debug", action="store_true",
-                 help="Enable debug messages")
-_opts.add_option("-v", "--verbose", dest="verbose", action="store_true",
-                 help="More output")
-_opts.add_option("-c", "--compile-times", dest="compile_times",
-                 action="store_true",
-                 help="Display compile time of each program")
-_opts.add_option("-t", "--threads", dest="threads", type="int",
-                 help="Number of threads to use")
-_opts.add_option("--faillog", dest="faillog_out",
-                 help="Write faillog into file specified here")
-_opts.add_option("--expect", dest="expect_url",
-                 help="file/url with fail expectations")
-_opts.add_option("--show-disappeared", dest="show_disappeared",
-                 action="store_true", help="show disappeared tests")
+    runexe="",
+    tests=["."],
+)
+_argparser.add_argument(dest="tests", metavar="TEST", nargs="*",
+                        help="test to run")
+_argparser.add_argument("-d", "--debug", dest="debug", action="store_true",
+                        help="Enable debug messages")
+_argparser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
+                        help="More output")
+_argparser.add_argument("-c", "--compile-times", dest="compile_times",
+                        action="store_true",
+                        help="Display compile time of each program")
+_argparser.add_argument("-t", "--threads", dest="threads", type=int,
+                        help="Number of threads to use")
+_argparser.add_argument("--faillog", dest="faillog_out",
+                        help="Write faillog into file specified here")
+_argparser.add_argument("--expect", dest="expect_url",
+                        help="file/url with fail expectations")
+_argparser.add_argument("--show-disappeared", dest="show_disappeared",
+                        action="store_true", help="show disappeared tests")
+_argparser.add_argument("--version", action="version", version=_version)
 
 # List of (matchfunc, factory) tuples.
 # if matchfunc(filename) returns True then factory(filename, environment) will
@@ -291,28 +297,33 @@ def makereport(config, args):
     r.print_summary()
 
 
+class ConfigurationAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        callback = _configurations[self.dest]
+        callback(parser, namespace, values, option_string)
+
+
 def main():
     global _rc
     os.putenv("LC_ALL", "C")  # normalize environment
 
     # Add new commandline options for all configurations
     for (config, setupfunc) in sorted(_configurations.items()):
-        _opts.add_option("--%s" % config, action="callback", callback=setupfunc,
-                         help="activate %s configuration" % config)
+        _argparser.add_argument("--%s" % config, dest=config, nargs=0,
+                                action=ConfigurationAction,
+                                help="activate %s configuration" % config)
 
-    _opts.set_defaults(create_testset=default_create_testset)
+    _argparser.set_defaults(create_testset=default_create_testset)
 
-    config, args = _opts.parse_args()
-    if not args:
-        args = ['.']
-    makereport(config, args)
+    config = _argparser.parse_args()
+    makereport(config, config.tests)
     return _rc
 
 
 def try_load_plugin(filename):
     global _test_factories
     global _configurations
-    global _opts
+    global _argparser
 
     # do not clutter our plugin directories with .pyc files...
     sys.dont_write_bytecode = True
@@ -342,8 +353,8 @@ def try_load_plugin(filename):
                     sys.stderr.write("Warning: plugin '%s' provides a second configuration for '%s'\n" % (filename, config))
                     continue
                 _configurations[config] = setup
-        if hasattr(plugin, "register_options"):
-            plugin.register_options(_opts)
+        if hasattr(plugin, "register_arguments"):
+            plugin.register_arguments(_argparser)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         sys.stderr.write("Warning: loading plugin '%s' failed: %s\n%s\n" % (filename, e, traceback.format_exc(tb)))

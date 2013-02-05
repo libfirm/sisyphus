@@ -1,5 +1,5 @@
 import os
-from test.test   import Test, ensure_dir, TestFactory
+from test.test   import Test, ensure_dir, test_factory
 from test.steps  import execute, step_execute
 from test.checks import check_retcode_zero, check_missing_errors, check_no_errors, check_no_warnings, check_firm_problems, check_cparser_problems, create_check_reference_output, create_check_warnings_reference
 from test.embedded_cmds import parse_embedded_commands
@@ -58,8 +58,8 @@ def make_c_test(environment, filename):
     execute.add_check(create_check_reference_output(environment))
     return test
 
-@TestFactory(lambda name: is_c_file(name) and "C/should_fail/" in name)
-@TestFactory(lambda name: is_c_file(name) and "C++/should_fail/" in name)
+@test_factory(lambda name: is_c_file(name) and "C/should_fail/" in name)
+@test_factory(lambda name: is_c_file(name) and "C++/should_fail/" in name)
 def make_c_should_fail(environment, filename):
     setup_c_environment(environment, filename)
     parse_embedded_commands_no_check(environment)
@@ -75,7 +75,7 @@ def parse_embedded_commands_no_check(environment):
     if checks:
         raise Exception("embedded checks not allowed")
 
-@TestFactory(lambda name: is_c_file(name) and "C/should_warn/" in name)
+@test_factory(lambda name: is_c_file(name) and "C/should_warn/" in name)
 def make_c_should_warn(environment, filename):
     setup_c_environment(environment, filename)
     environment.cflags += " -Wall -W"
@@ -88,7 +88,7 @@ def make_c_should_warn(environment, filename):
     compile.add_check(create_check_warnings_reference(environment))
     return test
 
-@TestFactory(lambda name: is_c_file(name) and "C/nowarn/" in name)
+@test_factory(lambda name: is_c_file(name) and "C/nowarn/" in name)
 def make_c_should_not_warn(environment, filename):
     setup_c_environment(environment, filename)
     environment.cflags += " -Wall -W"
@@ -101,17 +101,17 @@ def make_c_should_not_warn(environment, filename):
     compile.add_check(check_no_warnings)
     return test
 
-@TestFactory(lambda name: is_c_file(name) and "C/gnu99/" in name)
+@test_factory(lambda name: is_c_file(name) and "C/gnu99/" in name)
 def make_gnu99_test(environment, filename):
     environment.cflags += " -std=gnu99"
     return make_c_test(environment, filename)
 
-@TestFactory(lambda name: is_c_file(name) and "C/MS/" in name)
+@test_factory(lambda name: is_c_file(name) and "C/MS/" in name)
 def make_MS_test(environment, filename):
     environment.cflags += " --ms"
     return make_c_test(environment, filename)
 
-@TestFactory(lambda name: is_c_file(name) and "C/" in name)
+@test_factory(lambda name: is_c_file(name) and "C/" in name)
 def make_generic_test(environment, filename):
     environment.cflags += " -std=c99"
     return make_c_test(environment, filename)

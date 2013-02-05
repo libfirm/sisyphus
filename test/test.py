@@ -10,7 +10,7 @@ def ensure_dir(name):
     if not os.path.isdir(name):
         raise Exception("Couldn't create test output directory '%s'" % (name,))
 
-def TestFactory(matcher):
+def test_factory(matcher):
     """Annotation for functions which generate Tests.
     Requires a function to decide if a filename is a valid test file."""
     def register(func):

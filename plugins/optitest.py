@@ -8,7 +8,6 @@ def step_optitest(environment):
 
 def make_optitest(environment, filename):
     ensure_dir("build/optitest")
-    environment.filename = filename
 
     test = Test(environment, filename)
     test.add_step("optitest", step_optitest, checks=[

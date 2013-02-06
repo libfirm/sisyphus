@@ -28,7 +28,6 @@ def step_compile_c_asm(environment):
     return result
 
 def setup_c_environment(environment, filename):
-    environment.filename = filename
     environment.cflags  += " %s" % environment.arch_cflags
     environment.cflags  += " -I%s " % os.path.dirname(environment.filename)
     environment.ldflags += " %s" % environment.arch_ldflags

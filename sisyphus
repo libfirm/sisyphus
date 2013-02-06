@@ -180,6 +180,7 @@ def make_test(environment, filename, default_factory=None):
     global _test_factories
     # Each test gets its own environment
     environment = deepcopy(environment)
+    environment.filename = filename
 
     # Determine Tester to be used
     factory = default_factory

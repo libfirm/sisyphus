@@ -17,6 +17,28 @@ def test_factory(matcher):
         annotated_test_factories.append((matcher, func))
     return register
 
+
+class Environment(object):
+    """Environment objects track settings in the testsuite. The settings are
+    normal python attributes. The class just provides some convenience
+    functions for constructing/merging configurations."""
+
+    def __init__(self, **kwargs):
+        self.merge_dict(kwargs)
+
+    def set(self, **kwargs):
+        self.merge_dict(kwargs)
+
+    def merge(self, other):
+        self.merge_dict(other.__dict__)
+
+    def merge_dict(self, d):
+        for (key, value) in d.iteritems():
+            if key.startswith("_"):
+                continue
+            setattr(self, key, value)
+
+
 class TestStep(object):
     def __init__(self, name, func):
         self.name   = name

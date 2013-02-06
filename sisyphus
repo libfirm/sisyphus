@@ -2,7 +2,7 @@
 from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
-from test.test               import ensure_dir, annotated_test_factories
+from test.test               import ensure_dir, annotated_test_factories, Environment
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
 import fnmatch
@@ -18,21 +18,22 @@ _report_name    = "stats-" + datetime.now().strftime("%Y.%m.%d")
 _configurations = dict()
 _out            = sys.stdout
 
-_argparser = argparse.ArgumentParser()
-_argparser.set_defaults(
-    debug=False,
-    verbose=False,
-    threads=multiprocessing.cpu_count() + 1,
-    show_disappeared=False,
-    reportdir="reports/",
-    builddir="build/",
-    faillog_out=None,
-    expect_url="",
-    default_dirs=[ ],
-    arch_dirs=[ ],
-    runexe="",
-    tests=["."],
+_default_environment = Environment(
+    arch_dirs        = [],
+    builddir         = "build/",
+    debug            = False,
+    default_dirs     = [],
+    expect_url       = "",
+    faillog_out      = None,
+    reportdir        = "reports/",
+    runexe           = "",
+    show_disappeared = False,
+    tests            = ["."],
+    threads          = multiprocessing.cpu_count() + 1,
+    verbose          = False,
 )
+
+_argparser = argparse.ArgumentParser()
 _argparser.add_argument(dest="tests", metavar="TEST", nargs="*",
                         help="test to run")
 _argparser.add_argument("-d", "--debug", dest="debug", action="store_true",
@@ -240,6 +241,9 @@ def default_create_testset(config, args):
     return tests
 
 
+_default_environment.create_testset = default_create_testset
+
+
 def run_test(test):
     try:
         test.run()
@@ -250,22 +254,22 @@ def run_test(test):
     return test
 
 
-def makereport(config, args):
-    ensure_dir(config.reportdir)
-    ensure_dir(config.builddir)
+def makereport(environment, args):
+    ensure_dir(environment.reportdir)
+    ensure_dir(environment.builddir)
 
     expectations = {}
-    if config.expect_url:
+    if environment.expect_url:
         try:
-            expectations = load_expectations(config.expect_url, config)
+            expectations = load_expectations(environment.expect_url, environment)
         except Exception as e:
             _out.write("Couldn't load fail expectations: %s\n" % e)
 
-    tests = config.create_testset(config, args)
+    tests = environment.create_testset(environment, args)
 
     # create test futures for parallel evaluation
     queue    = list()
-    executor = ThreadPoolExecutor(max_workers=config.threads)
+    executor = ThreadPoolExecutor(max_workers=environment.threads)
     for test in tests:
         queue.append(executor.submit(run_test, test))
 
@@ -277,9 +281,9 @@ def makereport(config, args):
             test           = promise.result()
             found[test.id] = True
             expected       = expectations.get(test.id)
-            console_output(config, test, expected)
+            console_output(environment, test, expected)
             r.add_test(test)
-        if config.show_disappeared:
+        if environment.show_disappeared:
             for t in expectations:
                 if t not in found:
                     _out.write("%s%-40s %s%s\n" % (_console_red, t, "test disappeared", _console_normal))
@@ -290,10 +294,10 @@ def makereport(config, args):
         for promise in queue:
             promise.cancel()
         executor.shutdown(wait=False)
-    faillog_out = config.faillog_out
+    faillog_out = environment.faillog_out
     if faillog_out is None:
-        faillog_out = config.reportdir + "/" + _report_name + ".faillog"
-    r.write_faillog(open(faillog_out, 'w'), config)
+        faillog_out = environment.reportdir + "/" + _report_name + ".faillog"
+    r.write_faillog(open(faillog_out, 'w'), environment)
     r.print_summary()
 
 
@@ -313,10 +317,9 @@ def main():
                                 action=ConfigurationAction,
                                 help="activate %s configuration" % config)
 
-    _argparser.set_defaults(create_testset=default_create_testset)
-
-    config = _argparser.parse_args()
-    makereport(config, config.tests)
+    environment = deepcopy(_default_environment)
+    _argparser.parse_args(namespace=environment)
+    makereport(environment, environment.tests)
     return _rc
 
 

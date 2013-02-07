@@ -12,6 +12,7 @@ import argparse
 import os
 import sys
 import traceback
+import logging
 
 _version        = "0.2"
 _report_name    = "stats-" + datetime.now().strftime("%Y.%m.%d")
@@ -189,23 +190,21 @@ def make_test(environment, filename, default_factory=None):
             factory = tfactory
             break
     if factory is None:
-        if environment.debug:
-             sys.stderr.write("Couldn't determine Test factory for '%s'\n" % filename)
+        logging.warning("Couldn't determine Test factory for '%s'" % filename)
         return None
 
     try:
         test = factory(environment, filename)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
-        sys.stderr.write("Couldn't create test '%s': %s\n" % (filename, e))
-        if environment.debug:
-            sys.stderr.write(traceback.format_exc(tb))
+        logging.warning("Couldn't create test '%s': %s" % (filename, e))
+        logging.info(traceback.format_exc(tb))
         return None
     if test is None:
-        sys.stderr.write("Factory returned None for test '%s'\n" % filename)
+        logging.warning("Factory returned None for test '%s'" % filename)
         return None
     if not hasattr(test, 'run'):
-        sys.stderr.write("Factory created invalid test for '%s': test object has no run method\n" % (filename))
+        logging.warning("Factory created invalid test for '%s': test object has no run method" % (filename))
         return None
 
     return test
@@ -250,7 +249,7 @@ def run_test(test):
         test.run()
     except Exception as e:
         (_, _, tb) = sys.exc_info()
-        sys.stderr.write("Exception in %s: %s\n%s\n" % (test.id, e, traceback.format_exc(tb)))
+        logging.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))
         raise e
     return test
 
@@ -318,7 +317,7 @@ def register_test_factories(plugin):
     if hasattr(plugin, "configurations"):
         for (config, setup) in plugin.configurations.iteritems():
             if config in _configurations:
-                sys.stderr.write("Warning: plugin '%s' provides a second configuration for '%s'\n" % (plugin.__file__, config))
+                logging.warning("Warning: plugin '%s' provides a second configuration for '%s'" % (plugin.__file__, config))
                 continue
             _configurations[config] = setup
     if hasattr(plugin, "register_arguments"):
@@ -326,7 +325,7 @@ def register_test_factories(plugin):
             plugin.register_arguments(_argparser)
         except Exception as e:
             (_, _, tb) = sys.exc_info()
-            sys.stderr.write("Warning: loading plugin '%s' failed: %s\n%s\n" % (plugin.__file__, e, traceback.format_exc(tb)))
+            logging.error("Warning: loading plugin '%s' failed: %s\n%s" % (plugin.__file__, e, traceback.format_exc(tb)))
 
 
 def try_load_plugin(filename):
@@ -351,12 +350,13 @@ def try_load_plugin(filename):
             return plugin
     except Exception as e:
         (_, _, tb) = sys.exc_info()
-        sys.stderr.write("Warning: loading plugin '%s' failed: %s\n%s\n" % (filename, e, traceback.format_exc(tb)))
+        logging.error("Warning: loading plugin '%s' failed: %s\n%s" % (filename, e, traceback.format_exc(tb)))
 
 
 def main():
     global _rc
     os.putenv("LC_ALL", "C")  # normalize environment
+    log = logging.getLogger()
 
     # Load plugins
     pluginlist  = []
@@ -378,7 +378,7 @@ def main():
     if os.path.exists("./testsuite.py"):
         testsuite = try_load_plugin("./testsuite.py")
         if not hasattr(testsuite, "name"):
-            sys.stderr.write("%s: error: Skipping testsuite without name")
+            logging.error("%s: error: Skipping testsuite without name")
             testsuite = None
         register_test_factories(testsuite)
 
@@ -396,6 +396,8 @@ def main():
     _argparser.parse_args(namespace=environment)
     if len(environment.tests) == 0:
         environment.tests = default_tests
+    if environment.debug:
+        log.setLevel(logging.INFO)
     makereport(environment, environment.tests)
     return _rc
 

@@ -6,6 +6,7 @@ from   test.test   import Test, ensure_dir
 import os
 import re
 import sys
+import logging
 
 def check_valgrind_perf(result):
     m = re.search('I\s+refs:\s+([0-9,]+)', result.stderr)
@@ -79,7 +80,7 @@ def create_performance_testset(config, args):
     tests = []
     for name in args:
         if not name in sizes:
-            sys.stderr.write("Warning: no size setup for test '%s'\n" % name)
+            logging.warning("Warning: no size setup for test '%s'" % name)
             size = 0
         else:
             size = sizes[name]

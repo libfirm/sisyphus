@@ -1,5 +1,6 @@
 import util.shell as shell
 import sys
+import logging
 from time import time
 
 class StepResult(object):
@@ -30,8 +31,7 @@ def execute(environment, cmd, timeout):
     "Executes an external command and returns a StepResult object"
     result     = StepResult()
     result.cmd = cmd
-    if environment.debug:
-        sys.stderr.write(cmd + "\n")
+    logging.info(cmd)
     try:
         begin = time()
         result.stdout, result.stderr, result.retcode = shell.execute(cmd, timeout=timeout)

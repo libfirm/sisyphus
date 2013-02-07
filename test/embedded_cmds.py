@@ -1,6 +1,7 @@
 # A module to parse commands embedded into the tests themselfes
 import re
 import sys
+import logging
 from functools import partial
 
 
@@ -55,7 +56,7 @@ def _parse_embedded_command(environment, cmd):
         elif base == "ldflags":
             environment.ldflags += " %s" % (arg,)
         else:
-            sys.stderr.write("Error: unsupported command %s\n" % (base))
+            logging.error("unsupported embedded command %s" % base)
     else:
         # treat as a cflag option
         environment.cflags += " %s" % (cmd.strip(), )
@@ -72,8 +73,7 @@ def parse_embedded_commands(environment, filename):
         m = cmd_regex.match(line)
         if m:
             cmd = m.group(1)
-            if environment.debug:
-                sys.stderr.write("%s: embedded cmd %s\n" % (filename, cmd))
+            logging.info("%s: embedded cmd %s\n" % (filename, cmd))
             subcheckers = _parse_embedded_command(environment, cmd)
             if subcheckers:
                 checkers += subcheckers

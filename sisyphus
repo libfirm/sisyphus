@@ -3,6 +3,7 @@ from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
 from test.test               import ensure_dir, annotated_test_factories, Environment
+from test.suite              import get_default_suite
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
 import fnmatch
@@ -29,14 +30,13 @@ _default_environment = Environment(
     reportdir        = "reports/",
     runexe           = "",
     show_disappeared = False,
-    tests            = ["."],
     threads          = multiprocessing.cpu_count() + 1,
     verbose          = False,
 )
 
 _argparser = argparse.ArgumentParser()
-_argparser.add_argument(dest="tests", metavar="TEST", nargs="*",
-                        help="test to run")
+_argparser.add_argument(dest="testfilter", metavar="TEST", nargs="*",
+                        help="only run test TEST")
 _argparser.add_argument("-d", "--debug", dest="debug", action="store_true",
                         help="Enable debug messages")
 _argparser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
@@ -176,76 +176,12 @@ class Report:
             fh.write("%-40s %s\n" % (test.id, test.result))
 
 
-def make_test(filename, default_factory=None):
-    """Given a filename create a new Test object"""
-    global _test_factories
-    # Determine Tester to be used
-    factory = default_factory
-    for (test, tfactory) in _test_factories:
-        if test(filename):
-            factory = tfactory
-            break
-    if factory is None:
-        logging.warning("Couldn't determine Test factory for '%s'" % filename)
-        return None
-
-    try:
-        test = factory(filename)
-    except Exception as e:
-        (_, _, tb) = sys.exc_info()
-        logging.warning("Couldn't create test '%s': %s" % (filename, e))
-        logging.info(traceback.format_exc(tb))
-        return None
-    if test is None:
-        logging.warning("Factory returned None for test '%s'" % filename)
-        return None
-    if not hasattr(test, 'run'):
-        logging.warning("Factory created invalid test for '%s': test object has no run method" % (filename))
-        return None
-
-    return test
-
-
-def make_tests_from_dir(directory):
-    names = []
-    for name in glob(directory+"/*"):
-        names.append(os.path.normpath(name))
-    for name in glob(directory+"/**/*"):
-        names.append(os.path.normpath(name))
-    tests = []
-    for name in names:
-        test = make_test(name)
-        if test:
-            tests.append(test)
-    return tests
-
-
-def default_create_testset(environment, args):
-    tests = []
-    if not args:
-        args = environment.default_dirs + environment.arch_dirs
-
-    for arg in args:
-        if os.path.isdir(arg):
-            tests += make_tests_from_dir(arg)
-        else:
-            test = make_test(arg)
-            if test:
-                tests.append(test)
-    # Sort tests by their name
-    tests.sort(key=lambda x: x.id)
-    return tests
-
-
-_default_environment.create_testset = default_create_testset
-
-
 def run_test(environment, test):
     try:
         # Each test gets its own environment
         test_environment = deepcopy(environment)
-        environment.filename = test.id
-        test.run(environment)
+        test_environment.filename = test.id
+        test.run(test_environment)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         logging.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))
@@ -253,9 +189,11 @@ def run_test(environment, test):
     return test
 
 
-def makereport(environment, args):
+def makereport(environment, tests):
     ensure_dir(environment.reportdir)
     ensure_dir(environment.builddir)
+
+    tests = sorted(tests, key=lambda x: x.id)
 
     expectations = {}
     if environment.expect_url:
@@ -263,8 +201,6 @@ def makereport(environment, args):
             expectations = load_expectations(environment.expect_url, environment)
         except Exception as e:
             _out.write("Couldn't load fail expectations: %s\n" % e)
-
-    tests = environment.create_testset(environment, args)
 
     # create test futures for parallel evaluation
     queue    = list()
@@ -355,31 +291,32 @@ def try_load_plugin(filename):
 def main():
     global _rc
     os.putenv("LC_ALL", "C")  # normalize environment
+    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.WARNING)
     log = logging.getLogger()
 
     # Load plugins
     pluginlist  = []
-    pluginlist += list(glob("plugins/*.py"))
-    pluginlist += list(glob("reportplugin.py"))
-    pluginlist += list(glob("**/reportplugin.py"))
-    pluginlist += list(glob("configs/*.py"))
-    if os.path.normpath(sys.path[0]) != os.path.normpath(os.getcwd()):
-        pluginlist += list(glob(sys.path[0]+"/plugins/*.py"))
-        pluginlist += list(glob(sys.path[0]+"/configs/*.py"))
+    #pluginlist += list(glob("plugins/*.py"))
+    #pluginlist += list(glob("reportplugin.py"))
+    #pluginlist += list(glob("**/reportplugin.py"))
+    #pluginlist += list(glob("configs/*.py"))
+    pluginlist += list(glob(sys.path[0]+"/plugins/*.py"))
+    #pluginlist += list(glob(sys.path[0]+"/configs/*.py"))
     for pluginname in pluginlist:
         plugin = try_load_plugin(pluginname)
         if plugin:
             register_test_factories(plugin)
     global _test_factories
+    _test_factories += annotated_test_factories
 
     # Load main testsuite
-    testsuite = None
     if os.path.exists("./testsuite.py"):
-        testsuite = try_load_plugin("./testsuite.py")
-        if not hasattr(testsuite, "name"):
-            logging.error("%s: error: Skipping testsuite without name")
-            testsuite = None
-        register_test_factories(testsuite)
+        try_load_plugin("./testsuite.py")
+
+    default_suite = get_default_suite()
+    if default_suite is None:
+        logging.critical("No testsuite found")
+        return 1
 
     # Add new commandline options for all configurations
     for (config, setupfunc) in sorted(_configurations.items()):
@@ -387,19 +324,27 @@ def main():
                                 action=ConfigurationAction,
                                 help="activate %s configuration" % config)
 
-    _test_factories += annotated_test_factories
     environment = deepcopy(_default_environment)
-    if hasattr(testsuite, "environment"):
-        environment.merge(testsuite.environment)
-    default_tests = environment.tests
+    environment.merge(default_suite.environment)
     _argparser.parse_args(namespace=environment)
-    if len(environment.tests) == 0:
-        environment.tests = default_tests
     if environment.debug:
         log.setLevel(logging.INFO)
-    makereport(environment, environment.tests)
-    return _rc
 
+    tests = default_suite.tests
+    if len(environment.testfilter) > 0:
+        testmap = dict()
+        for test in tests:
+            testmap[test.id] = test
+        newtests = []
+        for f in environment.testfilter:
+            if f not in testmap:
+                logging.warning("Unknown test '%s'" % f)
+                continue
+            newtests.append(testmap[f])
+        tests = newtests
+
+    makereport(environment, tests)
+    return _rc
 
 if __name__ == "__main__":
     sys.exit(main())

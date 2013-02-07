@@ -1,3 +1,4 @@
+import logging
 import os
 
 annotated_test_factories = list()
@@ -9,13 +10,6 @@ def ensure_dir(name):
         pass
     if not os.path.isdir(name):
         raise Exception("Couldn't create test output directory '%s'" % (name,))
-
-def test_factory(matcher):
-    """Annotation for functions which generate Tests.
-    Requires a function to decide if a filename is a valid test file."""
-    def register(func):
-        annotated_test_factories.append((matcher, func))
-    return register
 
 
 class Environment(object):
@@ -77,6 +71,9 @@ class Test(object):
         # Execute steps
         for step in self.steps:
             stepresult = step.func(environment)
+            if stepresult is None:
+                logging.error("%s: stepresult of '%s' is None" % (self.id, step.name))
+                continue
             # while stepresult is fine use checks
             for check in step.checks:
                 if stepresult.fail():

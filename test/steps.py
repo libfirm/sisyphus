@@ -61,6 +61,7 @@ def _step_append_flags(environment, args):
         attr_value = getattr(environment, key)
         attr_value += value
         setattr(environment, key, attr_value)
+    return StepResult()
 
 
 def create_step_append_flags(**kwargs):

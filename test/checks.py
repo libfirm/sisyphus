@@ -11,7 +11,7 @@ def check_retcode_zero(result):
 
 def check_firm_problems(result):
     """Check output of step command for problematic firm messages"""
-    for line in result.stderr.splitlines() + result.stdout.splitlines():
+    for line in result.stderr.splitlines():
         if line.startswith("Verify warning:"):  # libfirm verifier warnings
             result.error = "verify warning"
             break
@@ -22,7 +22,7 @@ def check_firm_problems(result):
 
 def check_cparser_problems(result):
     """Check output of step command for problematic cparser outputs"""
-    for line in result.stderr.splitlines() + result.stdout.splitlines():
+    for line in result.stderr.splitlines():
         if "linker reported an error" in line:
             result.error = "linker error"
             break
@@ -39,7 +39,7 @@ def search_warnings_errors(result):
         return
     result.warnings = []
     result.errors   = []
-    for line in result.stderr.splitlines() + result.stdout.splitlines():
+    for line in result.stderr.splitlines():
         if ": warning: " in line:  # frontend warnings
             result.warnings.append(line)
         elif " error: " in line:  # frontend errors
@@ -79,10 +79,8 @@ def _help_check_reference_output(result, reference):
         result.diff = "unable to compare output/reference (non utf-8 encoding?)"
 
 
-def create_check_reference_output(environment):
-    """Read %(environment.filename)s.ref file and return a checker which
-    compares stdout with it."""
-    ref_file = environment.filename + ".ref"
+def create_check_reference_output(ref_file):
+    """Read ref_file and return a checker which compares stdout with it."""
     # check for the common case of missing reference output and produce an
     # understandable message
     if not os.path.isfile(ref_file):
@@ -118,11 +116,10 @@ def _help_check_warnings_reference(result, reference):
         result.error = "reported different warnings"
 
 
-def create_check_warnings_reference(environment):
-    """Read %(environment.filename)s.ref file and compare it with the warnings
-    the compiler actually reported. If the reference file is missing we just
-    check that there are any warnings at all."""
-    warnings_file = environment.filename + ".ref"
+def create_check_warnings_reference(warnings_file):
+    """Read warnings_file and compare it with the warnings the compiler
+    actually reported. If the reference file is missing we just check that
+    there are any warnings at all."""
     if not os.path.isfile(warnings_file):
         return check_missing_warnings
     else:

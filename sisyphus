@@ -118,10 +118,10 @@ def expectation_match(error, expectation):
     return error == expectation
 
 
-def console_output(config, test, expected):
+def console_output(environment, test, expected):
     timing = ""
     prefix = ""
-    if config.compile_times:
+    if environment.compile_times:
         time = None
         if hasattr(test, "stepresults") and "compile" in test.stepresults:
             result = test.stepresults["compile"]
@@ -131,7 +131,7 @@ def console_output(config, test, expected):
             timing = " [%s%.2fs%s]" % (_console_yellow, time, _console_normal)
     result = test.result
     if expected and expectation_match(result, expected):
-        if test.success and not config.verbose:
+        if test.success and not environment.verbose:
             _out.write("%s%s..." % (_console_clear, test.id))
             _out.flush()
             return
@@ -171,18 +171,14 @@ class Report:
                    (self.summary[0], _console_bold, self.summary[1], _console_normal))
         _out.flush()
 
-    def write_faillog(self, fh, config):
+    def write_faillog(self, fh):
         for test in self.tests:
             fh.write("%-40s %s\n" % (test.id, test.result))
 
 
-def make_test(environment, filename, default_factory=None):
+def make_test(filename, default_factory=None):
     """Given a filename create a new Test object"""
     global _test_factories
-    # Each test gets its own environment
-    environment = deepcopy(environment)
-    environment.filename = filename
-
     # Determine Tester to be used
     factory = default_factory
     for (test, tfactory) in _test_factories:
@@ -194,7 +190,7 @@ def make_test(environment, filename, default_factory=None):
         return None
 
     try:
-        test = factory(environment, filename)
+        test = factory(filename)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         logging.warning("Couldn't create test '%s': %s" % (filename, e))
@@ -210,7 +206,7 @@ def make_test(environment, filename, default_factory=None):
     return test
 
 
-def make_tests_from_dir(environment, directory):
+def make_tests_from_dir(directory):
     names = []
     for name in glob(directory+"/*"):
         names.append(os.path.normpath(name))
@@ -218,22 +214,22 @@ def make_tests_from_dir(environment, directory):
         names.append(os.path.normpath(name))
     tests = []
     for name in names:
-        test = make_test(environment, name)
+        test = make_test(name)
         if test:
             tests.append(test)
     return tests
 
 
-def default_create_testset(config, args):
+def default_create_testset(environment, args):
     tests = []
     if not args:
-        args = config.default_dirs + config.arch_dirs
+        args = environment.default_dirs + environment.arch_dirs
 
     for arg in args:
         if os.path.isdir(arg):
-            tests += make_tests_from_dir(config, arg)
+            tests += make_tests_from_dir(arg)
         else:
-            test = make_test(config, arg)
+            test = make_test(arg)
             if test:
                 tests.append(test)
     # Sort tests by their name
@@ -244,9 +240,12 @@ def default_create_testset(config, args):
 _default_environment.create_testset = default_create_testset
 
 
-def run_test(test):
+def run_test(environment, test):
     try:
-        test.run()
+        # Each test gets its own environment
+        test_environment = deepcopy(environment)
+        environment.filename = test.id
+        test.run(environment)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         logging.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))
@@ -271,7 +270,7 @@ def makereport(environment, args):
     queue    = list()
     executor = ThreadPoolExecutor(max_workers=environment.threads)
     for test in tests:
-        queue.append(executor.submit(run_test, test))
+        queue.append(executor.submit(run_test, environment, test))
 
     # collect report
     r = Report()
@@ -297,7 +296,7 @@ def makereport(environment, args):
     faillog_out = environment.faillog_out
     if faillog_out is None:
         faillog_out = environment.reportdir + "/" + _report_name + ".faillog"
-    r.write_faillog(open(faillog_out, 'w'), environment)
+    r.write_faillog(open(faillog_out, 'w'))
     r.print_summary()
 
 

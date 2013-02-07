@@ -1,13 +1,14 @@
 # A module to parse commands embedded into the tests themselfes
+from functools import partial
+from steps     import create_step_append_flags
+import logging
 import re
 import sys
-import logging
-from functools import partial
 
 
 def _check_regex(result, regex, txt, count, expected_result):
     realcount = 0
-    for line in result.asm.splitlines():
+    for line in result.stdout.splitlines():
         if regex.search(line):
             realcount += 1
             if realcount > count:
@@ -21,8 +22,8 @@ def _check_regex(result, regex, txt, count, expected_result):
         result.error = "check[%s] '%s' failed" % (count, txt,)
 
 
-def _embedded_add_check(environment, regex_string, count_arg, flag):
-    """create a regex checker (for assembler output)"""
+def _embedded_add_check(regex_string, count_arg, flag):
+    """create a regex check (for assembler output)"""
     c = 0
     if count_arg:
         if flag:
@@ -33,11 +34,10 @@ def _embedded_add_check(environment, regex_string, count_arg, flag):
     return partial(_check_regex, regex=regex, txt=regex_string, count=c, expected_result=flag)
 
 
-def _parse_embedded_command(environment, cmd):
+def _parse_embedded_command(cmd, flags, asm_checks):
     """parse one /*$ $*/ embedded command"""
-    cmdre = re.compile("(!?check(\[[0-9]+\])?|shell|cflags|ldflags)(.*)")
+    cmdre = re.compile("(!?check(\[[0-9]+\])?|cflags|ldflags)(.*)")
     m = cmdre.match(cmd)
-    checkers = []
     if m:
         base = m.group(1)
         if m.group(2):
@@ -46,35 +46,39 @@ def _parse_embedded_command(environment, cmd):
             arg = m.group(3).strip()
 
         if base == "check":
-            checker = _embedded_add_check(environment, arg, m.group(2), True)
-            checkers.append(checker)
+            check = _embedded_add_check(arg, m.group(2), True)
+            asm_checks.append(check)
         elif base == "!check":
-            checker = _embedded_add_check(environment, arg, m.group(2), False)
-            checkers.append(checker)
+            check = _embedded_add_check(arg, m.group(2), False)
+            asm_checks.append(check)
         elif base == "cflags":
-            environment.cflags += " %s" % (arg,)
+            flags["cflags"] += " %s" % (arg,)
         elif base == "ldflags":
-            environment.ldflags += " %s" % (arg,)
+            flags["ldflags"] += " %s" % (arg,)
         else:
             logging.error("unsupported embedded command %s" % base)
     else:
         # treat as a cflag option
-        environment.cflags += " %s" % (cmd.strip(), )
-    return checkers
+        flags["cflags"] += " %s" % (cmd.strip(), )
 
 
-def parse_embedded_commands(environment, filename):
+def parse_embedded_commands(test, filename, asm_step_factory=None):
     """Parse a given file for embedded test commands (/*$ ... $*/ sequences).
-    Commands may modify the environment (like adding cflags, ldflags) or create
-    additional checkers for a step which produces assembler output."""
-    cmd_regex = re.compile("/\\*\\$ (.+) \\$\\*/")
-    checkers = []
+    Modifies the test and adds an additional assembly generation step with the
+    asm_step callback if necessary."""
+    cmd_regex  = re.compile("/\\*\\$ (.+) \\$\\*/")
+    asm_checks = []
+    flags      = dict(cflags="", ldflags="")
     for line in open(filename, "rb"):
         m = cmd_regex.match(line)
         if m:
             cmd = m.group(1)
             logging.info("%s: embedded cmd %s\n" % (filename, cmd))
-            subcheckers = _parse_embedded_command(environment, cmd)
-            if subcheckers:
-                checkers += subcheckers
-    return checkers
+            _parse_embedded_command(cmd, flags, asm_checks)
+    if len(asm_checks) > 0:
+        step = asm_step_factory()
+        step.add_checks(asm_checks)
+    if flags["cflags"] != "":
+        test.prepend_step("embedded_cflags", create_step_append_flags(cflags=flags["cflags"]))
+    if flags["ldflags"] != "":
+        test.prepend_step("embedded_ldflags", create_step_append_flags(ldflags=flags["ldflags"]))

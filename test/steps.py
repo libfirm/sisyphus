@@ -1,7 +1,8 @@
-import util.shell as shell
-import sys
+from functools import partial
+from time      import time
 import logging
-from time import time
+import sys
+import util.shell as shell
 
 class StepResult(object):
     """Captures the result of a single "step". Typical steps are the execution
@@ -53,3 +54,14 @@ def step_execute(environment):
         environment.executionargs = ""
     cmd = "%(runexe)s%(executable)s %(executionargs)s" % environment.__dict__
     return execute(environment, cmd, timeout=30)
+
+
+def _step_append_flags(environment, args):
+    for (key, value) in args.iteritems():
+        attr_value = getattr(environment, key)
+        attr_value += value
+        setattr(environment, key, attr_value)
+
+
+def create_step_append_flags(**kwargs):
+    return partial(_step_append_flags, args=kwargs)

@@ -54,10 +54,9 @@ class TestStep(object):
 
 class Test(object):
     """The default Test which executes a list of steps and checks."""
-    def __init__(self, environment, id):
+    def __init__(self, id):
         self.id          = id
         self.steps       = []
-        self.environment = environment
 
     def add_step(self, name, step_func, checks=[]):
         step = TestStep(name, step_func)
@@ -65,13 +64,19 @@ class Test(object):
         step.add_checks(checks)
         return step
 
-    def run(self):
+    def prepend_step(self, name, step_func, checks=[]):
+        step = TestStep(name, step_func)
+        self.steps.insert(0, step)
+        step.add_checks(checks)
+        return step
+
+    def run(self, environment):
         self.success     = True
         self.result      = "ok"
         self.stepresults = dict()
         # Execute steps
         for step in self.steps:
-            stepresult = step.func(self.environment)
+            stepresult = step.func(environment)
             # while stepresult is fine use checks
             for check in step.checks:
                 if stepresult.fail():

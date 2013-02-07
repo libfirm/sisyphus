@@ -12,7 +12,7 @@ def make_optitest(environment, filename):
     test = Test(environment, filename)
     test.add_step("optitest", step_optitest, checks=[
         check_retcode_zero,
-        create_check_reference_output(environment),
+        create_check_reference_output(filename + ".ref"),
     ])
     return test
 

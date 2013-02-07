@@ -308,27 +308,28 @@ class ConfigurationAction(argparse.Action):
         callback(parser, namespace, values, option_string)
 
 
-def main():
-    global _rc
-    os.putenv("LC_ALL", "C")  # normalize environment
-
-    # Add new commandline options for all configurations
-    for (config, setupfunc) in sorted(_configurations.items()):
-        _argparser.add_argument("--%s" % config, dest=config, nargs=0,
-                                action=ConfigurationAction,
-                                help="activate %s configuration" % config)
-
-    environment = deepcopy(_default_environment)
-    _argparser.parse_args(namespace=environment)
-    makereport(environment, environment.tests)
-    return _rc
-
-
-def try_load_plugin(filename):
+def register_test_factories(plugin):
     global _test_factories
     global _configurations
     global _argparser
 
+    if hasattr(plugin, "test_factories"):
+        _test_factories += plugin.test_factories
+    if hasattr(plugin, "configurations"):
+        for (config, setup) in plugin.configurations.iteritems():
+            if config in _configurations:
+                sys.stderr.write("Warning: plugin '%s' provides a second configuration for '%s'\n" % (plugin.__file__, config))
+                continue
+            _configurations[config] = setup
+    if hasattr(plugin, "register_arguments"):
+        try:
+            plugin.register_arguments(_argparser)
+        except Exception as e:
+            (_, _, tb) = sys.exc_info()
+            sys.stderr.write("Warning: loading plugin '%s' failed: %s\n%s\n" % (plugin.__file__, e, traceback.format_exc(tb)))
+
+
+def try_load_plugin(filename):
     # do not clutter our plugin directories with .pyc files...
     sys.dont_write_bytecode = True
 
@@ -347,33 +348,57 @@ def try_load_plugin(filename):
         with open(filename, "r") as file:
             plugin = imp.load_module(modulename, file, filename,
                                      ("py", "r", imp.PY_SOURCE))
-
-        _test_factories += annotated_test_factories
-        if hasattr(plugin, "test_factories"):
-            _test_factories += plugin.test_factories
-        if hasattr(plugin, "configurations"):
-            for (config, setup) in plugin.configurations.iteritems():
-                if config in _configurations:
-                    sys.stderr.write("Warning: plugin '%s' provides a second configuration for '%s'\n" % (filename, config))
-                    continue
-                _configurations[config] = setup
-        if hasattr(plugin, "register_arguments"):
-            plugin.register_arguments(_argparser)
+            return plugin
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         sys.stderr.write("Warning: loading plugin '%s' failed: %s\n%s\n" % (filename, e, traceback.format_exc(tb)))
-        return
 
-if __name__ == "__main__":
+
+def main():
+    global _rc
+    os.putenv("LC_ALL", "C")  # normalize environment
+
     # Load plugins
     pluginlist  = []
     pluginlist += list(glob("plugins/*.py"))
-    pluginlist += list(glob(sys.path[0]+"/plugins/*.py"))
     pluginlist += list(glob("reportplugin.py"))
     pluginlist += list(glob("**/reportplugin.py"))
     pluginlist += list(glob("configs/*.py"))
-    pluginlist += list(glob(sys.path[0]+"/configs/*.py"))
+    if os.path.normpath(sys.path[0]) != os.path.normpath(os.getcwd()):
+        pluginlist += list(glob(sys.path[0]+"/plugins/*.py"))
+        pluginlist += list(glob(sys.path[0]+"/configs/*.py"))
     for pluginname in pluginlist:
-        try_load_plugin(pluginname)
+        plugin = try_load_plugin(pluginname)
+        if plugin:
+            register_test_factories(plugin)
+    global _test_factories
 
+    # Load main testsuite
+    testsuite = None
+    if os.path.exists("./testsuite.py"):
+        testsuite = try_load_plugin("./testsuite.py")
+        if not hasattr(testsuite, "name"):
+            sys.stderr.write("%s: error: Skipping testsuite without name")
+            testsuite = None
+        register_test_factories(testsuite)
+
+    # Add new commandline options for all configurations
+    for (config, setupfunc) in sorted(_configurations.items()):
+        _argparser.add_argument("--%s" % config, dest=config, nargs=0,
+                                action=ConfigurationAction,
+                                help="activate %s configuration" % config)
+
+    _test_factories += annotated_test_factories
+    environment = deepcopy(_default_environment)
+    if hasattr(testsuite, "environment"):
+        environment.merge(testsuite.environment)
+    default_tests = environment.tests
+    _argparser.parse_args(namespace=environment)
+    if len(environment.tests) == 0:
+        environment.tests = default_tests
+    makereport(environment, environment.tests)
+    return _rc
+
+
+if __name__ == "__main__":
     sys.exit(main())

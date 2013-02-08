@@ -2,7 +2,7 @@
 from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
-from test.test               import ensure_dir, annotated_test_factories, Environment
+from test.test               import ensure_dir, Environment
 from test.suite              import get_default_suite
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
@@ -306,8 +306,6 @@ def main():
         plugin = try_load_plugin(pluginname)
         if plugin:
             register_test_factories(plugin)
-    global _test_factories
-    _test_factories += annotated_test_factories
 
     # Load main testsuite
     if os.path.exists("./testsuite.py"):

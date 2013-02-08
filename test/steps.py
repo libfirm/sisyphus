@@ -4,6 +4,7 @@ import logging
 import sys
 import util.shell as shell
 
+
 class StepResult(object):
     """Captures the result of a single "step". Typical steps are the execution
     of 1 external command with additional verification/checking of the results.

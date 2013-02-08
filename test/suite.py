@@ -3,6 +3,7 @@ from test import Environment
 testsuites    = []
 _default_suite = None
 
+
 class _TestSuite(object):
     def __init__(self, name, tests, environment, register_arguments):
         self.name               = name

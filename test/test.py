@@ -1,7 +1,6 @@
 import logging
 import os
 
-annotated_test_factories = list()
 
 def ensure_dir(name):
     try:

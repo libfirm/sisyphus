@@ -4,6 +4,13 @@ import logging
 import sys
 import util.shell as shell
 
+def step_name(name):
+    """Decorator for step functions to give them a name
+    instead of giving a name via the add_step method"""
+    def add_attrib(func):
+        func.__step_name = name
+        return func
+    return add_attrib
 
 class StepResult(object):
     """Captures the result of a single "step". Typical steps are the execution

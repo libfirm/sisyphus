@@ -44,14 +44,25 @@ class TestStep(object):
     def add_checks(self, checks):
         self.checks += checks
 
-
 class Test(object):
     """The default Test which executes a list of steps and checks."""
     def __init__(self, id):
         self.id          = id
         self.steps       = []
 
-    def add_step(self, name, step_func, checks=[]):
+    def add_step(self, name, step_func=None, checks=[]):
+        # actually name can be None, but not step_func
+        # for backwards compatibility, here comes the workaround
+        if step_func == None:
+            step_func = name
+            name = None
+        if not name:
+            if hasattr(step_func, "__step_name"):
+                name = getattr(step_func, "__step_name")
+            else:
+                name = step_func.__name__
+                if name.startswith("step_"):
+                    name = name[5:]
         step = TestStep(name, step_func)
         self.steps.append(step)
         step.add_checks(checks)

@@ -37,6 +37,12 @@ class TestStep(object):
         self.name   = name
         self.func   = func
         self.checks = []
+        self.before = lambda env: None
+
+    def set_before(func):
+        """Set a function to execute right before step is executed.
+        The functions gets the environment as its single argument."""
+        self.before = func
 
     def add_check(self, check):
         self.checks.append(check)
@@ -80,6 +86,7 @@ class Test(object):
         self.stepresults = dict()
         # Execute steps
         for step in self.steps:
+            step.before(environment)
             stepresult = step.func(environment)
             if stepresult is None:
                 logging.error("%s: stepresult of '%s' is None" % (self.id, step.name))

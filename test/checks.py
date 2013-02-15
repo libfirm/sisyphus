@@ -1,6 +1,7 @@
-import os
-import difflib
 from functools import partial
+import difflib
+import logging
+import os
 
 
 def check_retcode_zero(result):
@@ -78,15 +79,20 @@ def _help_check_reference_output(result, reference):
         # We might end up here when utf-8 decoding failed
         result.diff = "unable to compare output/reference (non utf-8 encoding?)"
 
+def _help_check_always_fail(result, error):
+    result.error = error
+
 
 def create_check_reference_output(ref_file):
     """Read ref_file and return a checker which compares stdout with it."""
     # check for the common case of missing reference output and produce an
     # understandable message
     if not os.path.isfile(ref_file):
-        raise Exception("reference output '%s' missing" % (ref_file,))
-    reference_output = open(ref_file, "rb").read()
-    return partial(_help_check_reference_output, reference=reference_output)
+        logging.error("reference output '%s' missing" % (ref_file,))
+        return partial(_help_check_always_fail, error="reference output missing")
+    else:
+        reference = open(ref_file, "rb").read()
+        return partial(_help_check_reference_output, reference=reference)
 
 
 def check_missing_warnings(result):

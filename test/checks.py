@@ -10,6 +10,12 @@ def check_retcode_zero(result):
         result.error = "returncode not zero but %s" % result.retcode
 
 
+def check_retcode_nonzero(result):
+    """Check that the return code of the step command is not zero"""
+    if result.retcode == 0:
+        result.error = "returncode zero"
+
+
 def check_firm_problems(result):
     """Check output of step command for problematic firm messages"""
     for line in result.stderr.splitlines():

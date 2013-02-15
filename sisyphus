@@ -314,6 +314,7 @@ def main():
     if default_suite is None:
         logging.critical("No testsuite found")
         return 1
+    default_suite.register_arguments(_argparser)
 
     # Add new commandline options for all configurations
     for (config, setupfunc) in sorted(_configurations.items()):

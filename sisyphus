@@ -6,7 +6,6 @@ from test.test               import ensure_dir, Environment
 from test.suite              import get_default_suite
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
-import fnmatch
 import imp
 import multiprocessing
 import argparse
@@ -334,11 +333,19 @@ def main():
         for test in tests:
             testmap[test.id] = test
         newtests = []
-        for f in environment.testfilter:
-            if f not in testmap:
-                logging.warning("Unknown test '%s'" % f)
-                continue
-            newtests.append(testmap[f])
+        for filter in environment.testfilter:
+            test = testmap.get(filter)
+            if test is None:
+                # see if any test has the string as prefix/suffix
+                found_one = False
+                for test in tests:
+                    if test.id.startswith(filter) or test.id.endswith(filter):
+                        newtests.append(test)
+                        found_one = True
+                if not found_one:
+                    logging.warning("Unknown test '%s'" % filter)
+                    continue
+            newtests.append(test)
         tests = newtests
 
     makereport(environment, tests)

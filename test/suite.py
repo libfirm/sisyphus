@@ -5,7 +5,11 @@ _default_suite = None
 
 
 class _TestSuite(object):
-    def __init__(self, name, tests, environment, register_arguments):
+    def __init__(self, name="default", tests=list(), environment=None, register_arguments=None):
+        if environment is None:
+            environment = Environment()
+        if register_arguments is None:
+            register_arguments = lambda x: None
         self.name               = name
         self.tests              = tests
         self.environment        = environment
@@ -20,16 +24,12 @@ def add(test):
     """Add a test case to the default test suite"""
     global _default_suite
     if _default_suite is None:
-        _default_suite = _TestSuite("default", [], None, None)
+        _default_suite = _TestSuite()
     _default_suite.tests.append(test)
 
 def make(name, tests, environment=None, register_arguments=None):
     """Create a test suite. Make it the default one, if there is no default so far."""
     global _default_suite
-    if environment is None:
-        environment = Environment()
-    if register_arguments is None:
-        register_arguments = lambda: None
     suite = _TestSuite(name, tests, environment, register_arguments)
     testsuites.append(suite)
     if _default_suite is None:

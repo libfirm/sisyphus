@@ -287,7 +287,7 @@ def try_load_plugin(filename):
 def main():
     global _rc
     os.putenv("LC_ALL", "C")  # normalize environment
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.WARNING)
+    logging.basicConfig(format="%(message)s", level=logging.WARNING)
     log = logging.getLogger()
 
     # Load plugins

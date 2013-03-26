@@ -190,7 +190,6 @@ def run_test(environment, test):
 
 def makereport(environment, tests):
     ensure_dir(environment.reportdir)
-    ensure_dir(environment.builddir)
 
     tests = sorted(tests, key=lambda x: x.id)
 

@@ -1,6 +1,6 @@
+from copy import deepcopy
 import logging
 import os
-
 
 def ensure_dir(name):
     try:
@@ -86,13 +86,17 @@ class Test(object):
         return step
 
     def run(self, environment):
+        test_environment = deepcopy(environment)
+        test_environment.testname = self.id
+        test_environment.filename = self.id  # using this is deprecated
+
         self.success     = True
         self.result      = "ok"
         self.stepresults = dict()
         # Execute steps
         for step in self.steps:
-            step.before(environment)
-            stepresult = step.func(environment)
+            step.before(test_environment)
+            stepresult = step.func(test_environment)
             if stepresult is None:
                 logging.error("%s: stepresult of '%s' is None" % (self.id, step.name))
                 continue

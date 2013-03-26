@@ -178,9 +178,7 @@ class Report:
 def run_test(environment, test):
     try:
         # Each test gets its own environment
-        test_environment = deepcopy(environment)
-        test_environment.filename = test.id
-        test.run(test_environment)
+        test.run(environment)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         logging.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))

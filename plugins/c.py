@@ -14,19 +14,19 @@ def step_compile_c(environment):
     setup_c_environment(environment)
     environment.executable = environment.builddir + "/" + environment.filename + ".exe"
     ensure_dir(os.path.dirname(environment.executable))
-    cmd = "%(cc)s %(cflags)s %(ldflags)s -o %(executable)s %(filename)s" % environment.__dict__
+    cmd = "%(cc)s %(cflags)s %(ldflags)s -o %(executable)s %(filename)s" % environment
     return execute(environment, cmd, timeout=60)
 
 
 def step_compile_c_syntax_only(environment):
     setup_c_environment(environment)
-    cmd = "%(cc)s %(cflags)s -fsyntax-only %(filename)s" % environment.__dict__
+    cmd = "%(cc)s %(cflags)s -fsyntax-only %(filename)s" % environment
     return execute(environment, cmd, timeout=20)
 
 
 def step_compile_c_asm(environment):
     """Compile c source code to assembler"""
-    cmd = "%(cc)s %(cflags)s -S -o- %(filename)s" % environment.__dict__
+    cmd = "%(cc)s %(cflags)s -S -o- %(filename)s" % environment
     return execute(environment, cmd, timeout=60)
 
 

@@ -11,26 +11,31 @@ def ensure_dir(name):
         raise Exception("Couldn't create test output directory '%s'" % (name,))
 
 
-class Environment(object):
+class Environment(dict):
     """Environment objects track settings in the testsuite. The settings are
     normal python attributes. The class just provides some convenience
     functions for constructing/merging configurations."""
-
     def __init__(self, **kwargs):
-        self.merge_dict(kwargs)
+        dict.__init__(self)
+        self.merge(kwargs)
 
     def set(self, **kwargs):
-        self.merge_dict(kwargs)
+        self.merge(kwargs)
 
-    def merge(self, other):
-        self.merge_dict(other.__dict__)
+    def merge(self, mutable_set):
+        for (key, value) in mutable_set.iteritems():
+            self[key] = value
 
-    def merge_dict(self, d):
-        for (key, value) in d.iteritems():
-            if key.startswith("_"):
-                continue
-            setattr(self, key, value)
-
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        raise AttributeError("Environment has no attribute '%s'" % name)
+    def __setattr__(self, name, value):
+        self[name] = value
+    def __delattr__(self, name):
+        if name in self:
+            del self[name]
+        raise AttributeError()
 
 class TestStep(object):
     def __init__(self, name, func):

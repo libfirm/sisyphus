@@ -3,7 +3,7 @@ from test.steps  import execute
 from test.checks import check_retcode_zero, create_check_reference_output
 
 def step_optitest(environment):
-    cmd = "./test_optimization.py %(filename)s" % environment.__dict__
+    cmd = "./test_optimization.py %(filename)s" % environment
     return execute(cmd, environment, timeout=20)
 
 def make_optitest(environment, filename):

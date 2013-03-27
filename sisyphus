@@ -6,17 +6,17 @@ from test.test               import ensure_dir, Environment
 from test.suite              import get_default_suite
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
-import imp
-import multiprocessing
 import argparse
+import imp
+import importlib
+import logging
+import multiprocessing
 import os
 import sys
 import traceback
-import logging
 
 _version        = "0.2"
 _report_name    = "stats-" + datetime.now().strftime("%Y.%m.%d")
-_configurations = dict()
 _out            = sys.stdout
 
 _default_environment = Environment(
@@ -232,86 +232,31 @@ def makereport(environment, tests):
     r.print_summary()
 
 
-class ConfigurationAction(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        callback = _configurations[self.dest]
-        callback(parser, namespace, values, option_string)
-
-
-def register_test_factories(plugin):
-    global _test_factories
-    global _configurations
-    global _argparser
-
-    if hasattr(plugin, "test_factories"):
-        _test_factories += plugin.test_factories
-    if hasattr(plugin, "configurations"):
-        for (config, setup) in plugin.configurations.iteritems():
-            if config in _configurations:
-                logging.warning("Warning: plugin '%s' provides a second configuration for '%s'" % (plugin.__file__, config))
-                continue
-            _configurations[config] = setup
-    if hasattr(plugin, "register_arguments"):
-        try:
-            plugin.register_arguments(_argparser)
-        except Exception as e:
-            (_, _, tb) = sys.exc_info()
-            logging.error("Warning: loading plugin '%s' failed: %s\n%s" % (plugin.__file__, e, traceback.format_exc(tb)))
-
-
-def try_load_plugin(filename):
-    # do not clutter our plugin directories with .pyc files...
-    sys.dont_write_bytecode = True
-
-    try:
-        dirname      = os.path.dirname(filename)
-        basename     = os.path.basename(filename)
-        parentmodule = dirname.replace("/", ".")
-        if parentmodule not in sys.modules.keys():
-            try:
-                __import__(parentmodule)
-            except:
-                # Create a fake module
-                module = imp.new_module(parentmodule)
-                sys.modules[parentmodule] = module
-        modulename = "%s.%s" % (parentmodule, basename.replace(".py", ""))
-        with open(filename, "r") as file:
-            plugin = imp.load_module(modulename, file, filename,
-                                     ("py", "r", imp.PY_SOURCE))
-            return plugin
-    except Exception as e:
-        (_, _, tb) = sys.exc_info()
-        logging.error("Warning: loading plugin '%s' failed: %s\n%s" % (filename, e, traceback.format_exc(tb)))
-
-
 def main():
     global _rc
     os.putenv("LC_ALL", "C")  # normalize environment
     logging.basicConfig(format="%(message)s", level=logging.WARNING)
     log = logging.getLogger()
 
-    # Load plugins
-    pluginlist  = []
-    #pluginlist += list(glob("plugins/*.py"))
-    #pluginlist += list(glob("reportplugin.py"))
-    #pluginlist += list(glob("**/reportplugin.py"))
-    #pluginlist += list(glob("configs/*.py"))
-    pluginlist += list(glob(sys.path[0]+"/plugins/*.py"))
-    #pluginlist += list(glob(sys.path[0]+"/configs/*.py"))
-    for pluginname in pluginlist:
-        plugin = try_load_plugin(pluginname)
-        if plugin:
-            register_test_factories(plugin)
+    # do not clutter our plugin directories with .pyc files...
+    sys.dont_write_bytecode = True
 
-    # Load main testsuite
-    if os.path.exists("./testsuite.py"):
-        try_load_plugin("./testsuite.py")
+    # Load "default" testsuite if available in the current directory
+    default_testsuite_filename = "./testsuite.py"
+    if os.path.exists(default_testsuite_filename):
+        if sys.path[0] != "":
+            sys.path.insert(0, "")
+        try:
+            importlib.import_module("testsuite")
+        except Exception as e:
+            (_, _, tb) = sys.exc_info()
+            logging.error("Loading default testsuite '%s' failed: %s\n%s" % (default_testsuite_filename, e, traceback.format_exc(tb)))
 
-    default_suite = get_default_suite()
-    if default_suite is None:
+    testsuite = get_default_suite()
+    if testsuite is None:
         logging.critical("No testsuite found")
         return 1
-    default_suite.register_arguments(_argparser)
+    testsuite.register_arguments(_argparser)
 
     # Add new commandline options for all configurations
     for (config, setupfunc) in sorted(_configurations.items()):
@@ -320,12 +265,12 @@ def main():
                                 help="activate %s configuration" % config)
 
     environment = deepcopy(_default_environment)
-    environment.merge(default_suite.environment)
+    environment.merge(testsuite.environment)
     _argparser.parse_args(namespace=environment)
     if environment.debug:
         log.setLevel(logging.INFO)
 
-    tests = default_suite.tests
+    tests = testsuite.tests
     if len(environment.testfilter) > 0:
         testmap = dict()
         for test in tests:

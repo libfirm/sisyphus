@@ -18,6 +18,7 @@ class Environment(dict):
     def __init__(self, **kwargs):
         dict.__init__(self)
         self.merge(kwargs)
+        self.disable_override = False
 
     def set(self, **kwargs):
         self.merge(kwargs)
@@ -31,6 +32,8 @@ class Environment(dict):
             return self[name]
         raise AttributeError("Environment has no attribute '%s'" % name)
     def __setattr__(self, name, value):
+        if name in self and self.disable_override:
+            raise Exception("Overriding disabled for environment")
         self[name] = value
     def __delattr__(self, name):
         if name in self:

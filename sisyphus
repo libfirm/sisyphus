@@ -117,7 +117,7 @@ def expectation_match(error, expectation):
     return error == expectation
 
 
-def console_output(environment, test, expected):
+def console_output(environment, test, expected, have_expectations):
     timing = ""
     prefix = ""
     if environment.compile_times:
@@ -148,7 +148,7 @@ def console_output(environment, test, expected):
 
         if expected:
             result += " (expected %s)" % expected
-        else:
+        elif have_expectations:
             result += " (new)"
     _out.write("%s%s%-40s %s%s%s\n" % (_console_clear, prefix, test.id, result, _console_normal, timing))
     _out.flush()
@@ -192,9 +192,11 @@ def makereport(environment, tests):
     tests = sorted(tests, key=lambda x: x.id)
 
     expectations = {}
+    have_expectations = False
     if environment.expect_url:
         try:
             expectations = load_expectations(environment.expect_url, environment)
+            have_expectations = True
         except Exception as e:
             _out.write("Couldn't load fail expectations: %s\n" % e)
 
@@ -212,7 +214,7 @@ def makereport(environment, tests):
             test           = promise.result()
             found[test.id] = True
             expected       = expectations.get(test.id)
-            console_output(environment, test, expected)
+            console_output(environment, test, expected, have_expectations)
             r.add_test(test)
         if environment.show_disappeared:
             for t in expectations:

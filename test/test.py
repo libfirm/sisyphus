@@ -63,6 +63,7 @@ class Test(object):
     def __init__(self, id):
         self.id          = id
         self.steps       = []
+        self.environment = Environment(testname = id)
 
     def add_step(self, name, step_func=None, checks=[]):
         # actually name can be None, but not step_func
@@ -88,18 +89,14 @@ class Test(object):
         step.add_checks(checks)
         return step
 
-    def run(self, environment):
-        test_environment = deepcopy(environment)
-        test_environment.testname = self.id
-        test_environment.filename = self.id  # using this is deprecated
-
+    def run(self):
         self.success     = True
         self.result      = "ok"
         self.stepresults = dict()
         # Execute steps
         for step in self.steps:
-            step.before(test_environment)
-            stepresult = step.func(test_environment)
+            step.before(self.environment)
+            stepresult = step.func(self.environment)
             if stepresult is None:
                 logging.error("%s: stepresult of '%s' is None" % (self.id, step.name))
                 continue

@@ -1,7 +1,8 @@
 import os
-from test.test   import ensure_dir
-from test.steps  import execute
-from functools import partial
+import test.suite
+from test.test  import ensure_dir
+from test.steps import execute
+from functools  import partial
 
 
 def setup_c_environment(environment):
@@ -16,7 +17,9 @@ def step_compile_c(environment):
     setup_c_environment(environment)
     environment.executable = "%(builddir)s/%(testname)s.exe" % environment
     ensure_dir(os.path.dirname(environment.executable))
-    cmd = "%(cc)s %(cppflags)s %(cflags)s %(ldflags)s -o %(executable)s %(filename)s" % environment
+    if not hasattr(environment, "cfile"):
+        environment.cfile = environment.testname
+    cmd = "%(cc)s %(cppflags)s %(cflags)s %(ldflags)s -o %(executable)s %(cfile)s" % environment
     return execute(environment, cmd, timeout=60)
 
 
@@ -25,11 +28,13 @@ def step_compile_cxx(environment):
     setup_c_environment(environment)
     environment.executable = "%(builddir)s/%(testname)s.exe" % environment
     ensure_dir(os.path.dirname(environment.executable))
-    cmd = "%(cxx)s %(cppflags)s %(cxxflags)s %(ldflags)s -o %(executable)s %(filename)s" % environment
+    if not hasattr(environment, "cxxfile"):
+        environment.cxxfile = environment.testname
+    cmd = "%(cxx)s %(cppflags)s %(cxxflags)s %(ldflags)s -o %(executable)s %(cfile)s" % environment
     return execute(environment, cmd, timeout=60)
 
 
-def register_arguments(argparser):
+def setup_arguments(argparser, default_env):
     group = argparser.add_argument_group("C language")
     group.add_argument("--cc", dest="cc", metavar="CC",
                        help="Use CC to compile C programs")
@@ -44,10 +49,16 @@ def register_arguments(argparser):
     group.add_argument("--archldflags", dest="archldflags",
                        metavar="ARCHLDFLAGS",
                        help="Append ARCHLDFLAGS to LDFLAGS")
-    argparser.set_defaults(
-        cc="cparser",
-        cflags="-O3",
-        arch_cflags="-march=native -m32",
-        ldflags="-lm",
-        arch_ldflags="-m32"
+    default_env.set(
+        cc="gcc",
+        cxx="g++",
+        cppflags="",
+        arch_cppflags="",
+        cflags="",
+        arch_cflags="",
+        cxxflags="",
+        arch_cxxflags="",
+        ldflags="",
+        arch_ldflags=""
     )
+test.suite.add_argparser_setup(setup_arguments)

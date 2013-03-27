@@ -3,7 +3,7 @@ from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
 from test.test               import ensure_dir, Environment
-from test.suite              import get_default_suite
+from test.suite              import get_default_suite, run_argparser_setups
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
 import argparse
@@ -21,6 +21,7 @@ _out            = sys.stdout
 
 _default_environment = Environment(
     arch_dirs        = [],
+    compile_times    = False,
     builddir         = "build/",
     debug            = False,
     default_dirs     = [],
@@ -33,7 +34,7 @@ _default_environment = Environment(
     verbose          = False,
 )
 
-_argparser = argparse.ArgumentParser()
+_argparser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
 _argparser.add_argument(dest="testfilter", metavar="TEST", nargs="*",
                         help="only run test TEST")
 _argparser.add_argument("-d", "--debug", dest="debug", action="store_true",
@@ -175,10 +176,9 @@ class Report:
             fh.write("%-40s %s\n" % (test.id, test.result))
 
 
-def run_test(environment, test):
+def run_test(test):
     try:
-        # Each test gets its own environment
-        test.run(environment)
+        test.run()
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         logging.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))
@@ -204,7 +204,7 @@ def makereport(environment, tests):
     queue    = list()
     executor = ThreadPoolExecutor(max_workers=environment.threads)
     for test in tests:
-        queue.append(executor.submit(run_test, environment, test))
+        queue.append(executor.submit(run_test, test))
 
     # collect report
     r = Report()
@@ -258,22 +258,26 @@ def main():
     if testsuite is None:
         logging.critical("No testsuite found")
         return 1
-    testsuite.register_arguments(_argparser)
 
-    # Add new commandline options for all configurations
-    for (config, setupfunc) in sorted(_configurations.items()):
-        _argparser.add_argument("--%s" % config, dest=config, nargs=0,
-                                action=ConfigurationAction,
-                                help="activate %s configuration" % config)
+    # Setup environment/argparsers from other modules
+    _default_environment.may_override = False
+    run_argparser_setups(_argparser, _default_environment)
+    _default_environment.may_override = True
 
-    environment = deepcopy(_default_environment)
-    environment.merge(testsuite.environment)
-    _argparser.parse_args(namespace=environment)
-    if environment.debug:
-        log.setLevel(logging.INFO)
+    # Parse arguments
+    args = Environment()
+    _argparser.parse_args(namespace=args)
+    # Make sure that the user did not use default values in argparse,
+    # they are not compatible with the hierarchical nature of sisyphus
+    for (key,value) in args.items():
+        if value == _argparser.get_default(key):
+            logging.error("Default value in argparse argument '%s' will override testsuite environment!" % key)
 
+    # Construct testlist
     tests = testsuite.tests
-    if len(environment.testfilter) > 0:
+
+    # Filter testlist if necessary
+    if hasattr(args, "testfilter") and len(args.testfilter) > 0:
         testmap = dict()
         for test in tests:
             testmap[test.id] = test
@@ -293,8 +297,27 @@ def main():
             newtests.append(test)
         tests = newtests
 
-    makereport(environment, tests)
+    # Prepare test environments
+    for test in tests:
+        old_testenv = test.environment
+        newenv = Environment()
+        newenv.merge(_default_environment)
+        newenv.merge(testsuite.environment)
+        newenv.merge(old_testenv)
+        newenv.merge(args)
+        test.environment = newenv
+
+    base_environment = Environment()
+    base_environment.merge(_default_environment)
+    base_environment.merge(testsuite.environment)
+    base_environment.merge(args)
+    if base_environment.debug:
+        log.setLevel(logging.INFO)
+
+    # Run the tests
+    makereport(base_environment, tests)
     return _rc
 
 if __name__ == "__main__":
-    sys.exit(main())
+    retcode = main()
+    sys.exit(retcode)

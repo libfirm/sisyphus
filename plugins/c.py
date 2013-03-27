@@ -5,35 +5,36 @@ from functools import partial
 
 
 def setup_c_environment(environment):
-    environment.cflags  = "%s %s" % (environment.arch_cflags, environment.cflags)
-    environment.ldflags = "%s %s" % (environment.arch_ldflags, environment.ldflags)
+    environment.cppflags = "%(arch_cppflags)s %(cppflags)s" % environment
+    environment.cflags   = "%(arch_cflags)s %(cflags)s" % environment
+    environment.cxxflags = "%(arch_cxxflags)s %(cxxflags)s" % environment
+    environment.ldflags  = "%(arch_ldflags)s %(ldflags)s" % environment
 
 
 def step_compile_c(environment):
-    """Compile c source code to executable"""
+    """Compile C source code to executable"""
     setup_c_environment(environment)
-    environment.executable = environment.builddir + "/" + environment.filename + ".exe"
+    environment.executable = "%(builddir)s/%(testname)s.exe" % environment
     ensure_dir(os.path.dirname(environment.executable))
-    cmd = "%(cc)s %(cflags)s %(ldflags)s -o %(executable)s %(filename)s" % environment
+    cmd = "%(cc)s %(cppflags)s %(cflags)s %(ldflags)s -o %(executable)s %(filename)s" % environment
     return execute(environment, cmd, timeout=60)
 
 
-def step_compile_c_syntax_only(environment):
+def step_compile_cxx(environment):
+    """Compile C++ source code to executable"""
     setup_c_environment(environment)
-    cmd = "%(cc)s %(cflags)s -fsyntax-only %(filename)s" % environment
-    return execute(environment, cmd, timeout=20)
-
-
-def step_compile_c_asm(environment):
-    """Compile c source code to assembler"""
-    cmd = "%(cc)s %(cflags)s -S -o- %(filename)s" % environment
+    environment.executable = "%(builddir)s/%(testname)s.exe" % environment
+    ensure_dir(os.path.dirname(environment.executable))
+    cmd = "%(cxx)s %(cppflags)s %(cxxflags)s %(ldflags)s -o %(executable)s %(filename)s" % environment
     return execute(environment, cmd, timeout=60)
 
 
 def register_arguments(argparser):
     group = argparser.add_argument_group("C language")
     group.add_argument("--cc", dest="cc", metavar="CC",
-                       help="Use CC to compile c programs")
+                       help="Use CC to compile C programs")
+    group.add_argument("--cxx", dest="cxx", metavar="CXX",
+                       help="Use CXX to compile C++ programs")
     group.add_argument("--cflags", dest="cflags", metavar="CFLAGS",
                        help="Use CFLAGS to compile test programs")
     group.add_argument("--archcflags", dest="archcflags", metavar="ARCHCFLAGS",

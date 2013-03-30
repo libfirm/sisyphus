@@ -3,7 +3,7 @@ from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
 from test.test               import ensure_dir, Environment
-from test.suite              import get_default_suite, run_argparser_setups
+from test.suite              import run_argparser_setups, testsuites
 from urllib                  import urlopen
 from util.concurrent.futures import ThreadPoolExecutor
 import argparse
@@ -53,6 +53,8 @@ _argparser.add_argument("--expect", dest="expect_url",
 _argparser.add_argument("--show-disappeared", dest="show_disappeared",
                         action="store_true", help="show disappeared tests")
 _argparser.add_argument("--version", action="version", version=_version)
+_argparser.add_argument("-s", "--suite", dest="suite", action='append',
+                        help="select testsuite to run")
 
 # List of (matchfunc, factory) tuples.
 # if matchfunc(filename) returns True then factory(filename, environment) will
@@ -189,8 +191,6 @@ def run_test(test):
 def makereport(environment, tests):
     ensure_dir(environment.reportdir)
 
-    tests = sorted(tests, key=lambda x: x.id)
-
     expectations = {}
     have_expectations = False
     if environment.expect_url:
@@ -254,10 +254,6 @@ def main():
             (_, _, tb) = sys.exc_info()
             logging.error("Loading default testsuite '%s' failed: %s\n%s" % (default_testsuite_filename, e, traceback.format_exc(tb)))
 
-    testsuite = get_default_suite()
-    if testsuite is None:
-        logging.critical("No testsuite found")
-        return 1
 
     # Setup environment/argparsers from other modules
     _default_environment.may_override = False
@@ -273,8 +269,32 @@ def main():
         if value == _argparser.get_default(key):
             logging.error("Default value in argparse argument '%s' will override testsuite environment!" % key)
 
-    # Construct testlist
-    tests = testsuite.tests
+    # Select testsuites/construct testlist
+    tests = []
+    if hasattr(args, "suite"):
+        for suite in args.suite:
+            testsuite = None
+            for s in testsuites:
+                if s.name == suite:
+                    testsuite = s
+                    break
+            if testsuite is None:
+                logging.error("Testsuite '%s' does not exist" % suite)
+                continue
+            for test in testsuite.tests:
+                test.testsuite = testsuite
+            tests += testsuite.tests
+    else:
+        had_default_testsuites = False
+        for testsuite in testsuites:
+            if not testsuite.default:
+                continue
+            had_default_testsuites = True
+            for test in testsuite.tests:
+                test.testsuite = testsuite
+            tests += testsuite.tests
+        if not had_default_testsuites:
+            logging.error("No default testsuites available")
 
     # Filter testlist if necessary
     if hasattr(args, "testfilter") and len(args.testfilter) > 0:
@@ -282,7 +302,7 @@ def main():
         for test in tests:
             testmap[test.id] = test
         newtests = []
-        for filter in environment.testfilter:
+        for filter in args.testfilter:
             test = testmap.get(filter)
             if test is None:
                 # see if any test has the string as prefix/suffix
@@ -297,19 +317,21 @@ def main():
             newtests.append(test)
         tests = newtests
 
+    # Sort tests
+    tests = sorted(tests, key=lambda x: x.id)
+
     # Prepare test environments
     for test in tests:
         old_testenv = test.environment
         newenv = Environment()
         newenv.merge(_default_environment)
-        newenv.merge(testsuite.environment)
+        newenv.merge(test.testsuite.environment)
         newenv.merge(old_testenv)
         newenv.merge(args)
         test.environment = newenv
 
     base_environment = Environment()
     base_environment.merge(_default_environment)
-    base_environment.merge(testsuite.environment)
     base_environment.merge(args)
     if base_environment.debug:
         log.setLevel(logging.INFO)

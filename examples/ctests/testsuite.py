@@ -1,10 +1,11 @@
-from plugins.c import step_compile_c
-from test.test import Test
-from test.steps import step_execute
-from test.checks import check_retcode_zero, check_no_warnings, create_check_reference_output
-from glob import glob
-import test
+from glob             import glob
+from plugins.c        import step_compile_c
+from plugins.compiler import check_no_warnings
+from test.checks      import check_retcode_zero, create_check_reference_output
+from test.steps       import step_execute
+from test.test        import Test
 import os
+import test
 
 def make_c_test(name):
     test = Test(name)

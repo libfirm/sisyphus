@@ -1,0 +1,3 @@
+This directory contains sisyphus plugins. They should be considered examples
+and not as part of the sisyphus distribution. Copy them into your own testsuites
+plugin directory if you plan to use them.

@@ -29,10 +29,10 @@ def _lower_rlimit(res, limit):
 
 class _Execute(object):
     def __init__(self, cmd, timeout, env):
-        self.cmd = cmd
-        self.process = None
+        self.cmd     = cmd
         self.timeout = timeout
         self.env     = env
+        self.proc    = None
 
     def _set_rlimit(self):
         if self.timeout > 0.0:
@@ -58,10 +58,12 @@ class _Execute(object):
             thread.start()
             thread.join(float(self.timeout))
             if thread.is_alive():
-                self.proc.terminate()
-                thread.join(1.0)
-                if thread.is_alive():
-                    self.proc.kill()
+                if self.proc is not None:
+                    self.proc.terminate()
+                    thread.join(1.0)
+                    if thread.is_alive():
+                        self.proc.kill()
+                        thread.join()
                 raise SigKill(signal.SIGXCPU, "SIGXCPU")
         else:
             self._run_process()

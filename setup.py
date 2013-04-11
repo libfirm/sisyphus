@@ -9,4 +9,13 @@ setup(name='sisyphus',
 		author_email="zwinkau@kit.edu",
 		packages=['sisyphus'],
 		scripts=['sis'],
+		classifiers=[
+		'Development Status :: 4 - Beta',
+		'Environment :: Console',
+		'Intended Audience :: Developers',
+		'Operating System :: Unix',
+		'Programming Language :: Python',
+		'Topic :: Software Development :: Testing',
+		],
+		platforms=['any'],
 	  )

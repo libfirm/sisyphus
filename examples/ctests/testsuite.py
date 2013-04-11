@@ -1,11 +1,11 @@
 from glob             import glob
 from plugins.c        import step_compile_c
 from plugins.compiler import check_no_warnings
-from test.checks      import check_retcode_zero, create_check_reference_output
-from test.steps       import step_execute
-from test.test        import Test
+from sisyphus.test.checks      import check_retcode_zero, create_check_reference_output
+from sisyphus.test.steps       import step_execute
+from sisyphus.test.test        import Test
 import os
-import test
+from sisyphus import test
 
 def make_c_test(name):
     test = Test(name)

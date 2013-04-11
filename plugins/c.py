@@ -1,7 +1,7 @@
 import os
-import test.suite
-from test.test  import ensure_dir
-from test.steps import execute
+from sisyphus.test import suite
+from sisyphus.test.test  import ensure_dir
+from sisyphus.test.steps import execute
 from functools  import partial
 
 
@@ -61,4 +61,4 @@ def setup_arguments(argparser, default_env):
         ldflags="",
         arch_ldflags=""
     )
-test.suite.add_argparser_setup(setup_arguments)
+suite.add_argparser_setup(setup_arguments)

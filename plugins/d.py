@@ -1,6 +1,6 @@
 import os
-import test.suite
-from test.steps  import execute, step_name
+from sisyphus import test.suite
+from sisyphus.test.steps  import execute, step_name
 
 @step_name("compile")
 def step_compile_d(environment):

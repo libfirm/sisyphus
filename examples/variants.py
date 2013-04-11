@@ -1,9 +1,9 @@
-import test
+from sisyphus import test
 import os
 from glob import glob
-from test.test import Test, Environment
-from test.checks import check_retcode_zero, create_check_reference_output
-from test.steps import execute
+from sisyphus.test.test import Test, Environment
+from sisyphus.test.checks import check_retcode_zero, create_check_reference_output
+from sisyphus.test.steps import execute
 
 def step_run(environment):
     """Simple teststep which executes a shell script"""

@@ -2,7 +2,7 @@ from functools import partial
 from time      import time
 import logging
 import sys
-import util.shell as shell
+import sisyphus.util.shell as shell
 
 def step_name(name):
     """Decorator for step functions to give them a name

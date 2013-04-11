@@ -2,10 +2,7 @@
 from copy                    import deepcopy
 from datetime                import datetime
 from glob                    import iglob as glob
-from test.test               import ensure_dir, Environment
-from test.suite              import run_argparser_setups, testsuites
 from urllib                  import urlopen
-from util.concurrent.futures import ThreadPoolExecutor
 import argparse
 import imp
 import importlib
@@ -15,7 +12,12 @@ import os
 import sys
 import traceback
 
-_version        = "0.2"
+from sisyphus.test.test                import ensure_dir, Environment
+from sisyphus.test.suite               import run_argparser_setups, testsuites
+from sisyphus.util.concurrent.futures  import ThreadPoolExecutor
+import sisyphus
+
+_version        = sisyphus.VERSION
 _report_name    = "stats-" + datetime.now().strftime("%Y.%m.%d")
 _out            = sys.stdout
 

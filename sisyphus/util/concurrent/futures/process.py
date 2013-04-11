@@ -50,7 +50,7 @@ import threading
 import weakref
 import sys
 
-from util.concurrent.futures import base
+import base
 
 try:
     import queue

@@ -1,3 +1,3 @@
-import test.suite
+from sisyphus.test import suite
 
-test.suite.make("dummy", [])
+suite.make("dummy", [])

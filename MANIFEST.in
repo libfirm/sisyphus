@@ -3,3 +3,4 @@ recursive-include plugins *.py
 recursive-include doc *
 recursive-include examples *
 README.mdwn
+LICENCE

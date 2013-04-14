@@ -24,4 +24,5 @@ setup(name='sisyphus',
 		'Topic :: Software Development :: Testing',
 		],
 		platforms=['any'],
+                licence="MIT",
 	  )

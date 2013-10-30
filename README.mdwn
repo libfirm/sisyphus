@@ -36,4 +36,4 @@ which should be ignored by the factories.
 
 ## Licence
 
-TODO ...
+MIT, see LICENCE file for full text

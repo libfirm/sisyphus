@@ -296,7 +296,8 @@ def main():
                 test.testsuite = testsuite
             tests += testsuite.tests
         if not had_default_testsuites:
-            logging.error("No default testsuites available")
+            suites = ", ".join(s.name for s in testsuites)
+            logging.error("No default. Select testsuite from:\n"+suites)
 
     # Filter testlist if necessary
     if hasattr(args, "testfilter") and len(args.testfilter) > 0:

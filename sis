@@ -99,10 +99,13 @@ def load_expectations(url, environment):
         results[test_id] = result
 
     if fetched:
-      cache = open(cachefile, "w")
-      for (test_id, result) in results.iteritems():
-          cache.write("%-40s %s\n" % (test_id, result))
-      cache.close()
+      try:
+        cache = open(cachefile, "w")
+        for (test_id, result) in results.iteritems():
+            cache.write("%-40s %s\n" % (test_id, result))
+        cache.close()
+      except:
+        _out.write("Warning: Writing to cache file failed:\n" % cachefile)
 
     return results
 

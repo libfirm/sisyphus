@@ -107,8 +107,9 @@ def load_expectations(url, environment):
         for (test_id, result) in results.iteritems():
             cache.write("%-40s %s\n" % (test_id, result))
         cache.close()
-      except:
-        _out.write("Warning: Writing to cache file failed:\n" % cachefile)
+      except Exception as e:
+        _out.write("Warning: Writing cache file '%s' failed: %s\n"
+                   % (cachefile, e))
 
     return results
 

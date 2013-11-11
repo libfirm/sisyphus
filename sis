@@ -77,14 +77,17 @@ def load_expectations(url, environment):
         fetched = True
         input   = urlopen(url)
         if input.getcode() is not None and input.getcode() != 200:
+            _out.write("Warning: Download '%s' fail. status code: %d\n"
+                       % (url, input.getcode()))
             fetched = False
-    except:
+    except Exception as e:
+        _out.write("Warning: Download '%s' fail: %s\n"
+                   % (url, e))
         fetched = False
 
     cachefile = os.path.join(environment.builddir, os.path.basename(url))
     if not fetched:
-        _out.write("Warning: Couldn't download from '%s', using cache file\n"
-                   % url)
+        _out.write("Warning: Using cached expect file\n")
         input = open(cachefile)
 
     results = dict()

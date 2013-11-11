@@ -98,10 +98,11 @@ def load_expectations(url, environment):
         result           = line[i:].strip()
         results[test_id] = result
 
-    cache = open(cachefile, "w")
-    for (test_id, result) in results.iteritems():
-        cache.write("%-40s %s\n" % (test_id, result))
-    cache.close()
+    if fetched:
+      cache = open(cachefile, "w")
+      for (test_id, result) in results.iteritems():
+          cache.write("%-40s %s\n" % (test_id, result))
+      cache.close()
 
     return results
 

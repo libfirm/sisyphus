@@ -103,7 +103,7 @@ def load_expectations(url, environment):
 
     if fetched:
       try:
-        ensure_dir(cachefile)
+        ensure_dir(environment.builddir)
         cache = open(cachefile, "w")
         for (test_id, result) in results.iteritems():
             cache.write("%-40s %s\n" % (test_id, result))

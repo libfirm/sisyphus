@@ -81,7 +81,7 @@ def load_expectations(url, environment):
     except:
         fetched = False
 
-    cachefile = environment.builddir + "/" + os.path.basename(url)
+    cachefile = os.path.join(environment.builddir, os.path.basename(url))
     if not fetched:
         _out.write("Warning: Couldn't download from '%s', using cache file\n"
                    % url)

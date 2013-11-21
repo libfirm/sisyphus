@@ -326,7 +326,8 @@ def main():
                 if not found_one:
                     logging.warning("Unknown test '%s'" % filter)
                     continue
-            newtests.append(test)
+            else:
+                newtests.append(test)
         tests = newtests
 
     # Sort tests

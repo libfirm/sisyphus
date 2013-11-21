@@ -29,10 +29,11 @@ def _lower_rlimit(res, limit):
 
 class _Execute(object):
     def __init__(self, cmd, timeout, env):
-        self.cmd     = cmd
-        self.timeout = timeout
-        self.env     = env
-        self.proc    = None
+        self.cmd       = cmd
+        self.timeout   = timeout
+        self.env       = env
+        self.proc      = None
+        self.exception = None
 
     def _set_rlimit(self):
         if self.timeout > 0.0:
@@ -44,19 +45,24 @@ class _Execute(object):
         _lower_rlimit(resource.RLIMIT_FSIZE,   32 * MB)
 
     def _run_process(self):
-        self.proc = subprocess.Popen(self.cmd,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
-                                     preexec_fn=self._set_rlimit,
-                                     env=self.env)
-        self.out, self.err = self.proc.communicate()
-        self.returncode = self.proc.returncode
+        try:
+            self.proc = subprocess.Popen(self.cmd,
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE,
+                                         preexec_fn=self._set_rlimit,
+                                         env=self.env)
+            self.out, self.err = self.proc.communicate()
+            self.returncode = self.proc.returncode
+        except Exception as e:
+            self.exception = e
 
     def run(self):
         if self.timeout > 0.0:
             thread = threading.Thread(target=self._run_process)
             thread.start()
             thread.join(float(self.timeout))
+            if self.exception is not None:
+                raise self.exception
             if thread.is_alive():
                 if self.proc is not None:
                     self.proc.terminate()

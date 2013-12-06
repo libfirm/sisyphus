@@ -1,6 +1,7 @@
 from copy import deepcopy
 import logging
 import os
+from threading import Semaphore, Lock
 
 def ensure_dir(name):
     try:
@@ -41,11 +42,12 @@ class Environment(dict):
         raise AttributeError()
 
 class TestStep(object):
-    def __init__(self, name, func):
+    def __init__(self, name, func, cpu_exclusive):
         self.name   = name
         self.func   = func
         self.checks = []
         self.before = lambda env: None
+        self.cpu_exclusive = cpu_exclusive
 
     def set_before(func):
         """Set a function to execute right before step is executed.
@@ -58,6 +60,51 @@ class TestStep(object):
     def add_checks(self, checks):
         self.checks += checks
 
+_CPULOCK_WRT = Semaphore()
+_CPULOCK_MUTEX = Lock()
+_CPULOCK_READCOUNT = 0
+
+class CPULock:
+    """Intra-process mechanism for exclusive CPU (all cores) use.
+    Any number of exclusive==False threads may acquire this in parallel,
+    but only one exclusive==True thread at any time.
+    Lock state is global for all object instances,
+    only the exclusive flag is object specific."""
+
+    # Basically an implementation of the readers-writers-problem,
+    # where exclusive==True means writer.
+    # This implements a variant with writer-starvation,
+    # because that should result in batch processing behavior in sisyphus.
+
+    def __init__(self, exclusive):
+        self.exclusive = exclusive
+
+    def acquire(self):
+        if self.exclusive: # writer
+            _CPULOCK_WRT.acquire()
+        else: # reader
+            with _CPULOCK_MUTEX:
+                global _CPULOCK_READCOUNT
+                _CPULOCK_READCOUNT += 1
+                if (_CPULOCK_READCOUNT == 1):
+                    _CPULOCK_WRT.acquire()
+
+    def release(self):
+        if self.exclusive: # writer
+            _CPULOCK_WRT.release()
+        else: # reader
+            with _CPULOCK_MUTEX:
+                global _CPULOCK_READCOUNT
+                _CPULOCK_READCOUNT -= 1
+                if (_CPULOCK_READCOUNT == 0):
+                    _CPULOCK_WRT.release()
+
+    # for the with-statement:
+    def __enter__(self):
+        self.acquire()
+    def __exit__(self, type, value, traceback):
+        self.release()
+
 class Test(object):
     """The default Test which executes a list of steps and checks."""
     def __init__(self, id):
@@ -65,7 +112,7 @@ class Test(object):
         self.steps       = []
         self.environment = Environment(testname = id)
 
-    def add_step(self, name, step_func=None, checks=[]):
+    def add_step(self, name, step_func=None, checks=[], cpu_exclusive=False):
         # actually name can be None, but not step_func
         # for backwards compatibility, here comes the workaround
         if step_func == None:
@@ -78,13 +125,13 @@ class Test(object):
                 name = step_func.__name__
                 if name.startswith("step_"):
                     name = name[5:]
-        step = TestStep(name, step_func)
+        step = TestStep(name, step_func, cpu_exclusive)
         self.steps.append(step)
         step.add_checks(checks)
         return step
 
-    def prepend_step(self, name, step_func, checks=[]):
-        step = TestStep(name, step_func)
+    def prepend_step(self, name, step_func, checks=[], cpu_exclusive=False):
+        step = TestStep(name, step_func, cpu_exclusive)
         self.steps.insert(0, step)
         step.add_checks(checks)
         return step
@@ -95,18 +142,19 @@ class Test(object):
         self.stepresults = dict()
         # Execute steps
         for step in self.steps:
-            step.before(self.environment)
-            stepresult = step.func(self.environment)
-            if stepresult is None:
-                logging.error("%s: stepresult of '%s' is None" % (self.id, step.name))
-                continue
-            # while stepresult is fine use checks
-            for check in step.checks:
+            with CPULock(step.cpu_exclusive):
+                step.before(self.environment)
+                stepresult = step.func(self.environment)
+                if stepresult is None:
+                    logging.error("%s: stepresult of '%s' is None" % (self.id, step.name))
+                    continue
+                # while stepresult is fine use checks
+                for check in step.checks:
+                    if stepresult.fail():
+                        break
+                    check(stepresult)
+                self.stepresults[step.name] = stepresult
                 if stepresult.fail():
+                    self.success = False
+                    self.result  = "%s: %s" % (step.name, stepresult.error)
                     break
-                check(stepresult)
-            self.stepresults[step.name] = stepresult
-            if stepresult.fail():
-                self.success = False
-                self.result  = "%s: %s" % (step.name, stepresult.error)
-                break

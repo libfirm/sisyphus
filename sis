@@ -42,7 +42,7 @@ _argparser.add_argument(dest="testfilter", metavar="TEST", nargs="*",
 _argparser.add_argument("-d", "--debug", dest="debug", action="store_true",
                         help="Enable debug messages")
 _argparser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
-                        help="More output")
+                        help="More output, e.g. expected test results")
 _argparser.add_argument("-c", "--compile-times", dest="compile_times",
                         action="store_true",
                         help="Display compile time of each program")

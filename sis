@@ -250,7 +250,9 @@ def makereport(environment, tests):
 def main():
     global _rc
     os.putenv("LC_ALL", "C")  # normalize environment
-    logging.basicConfig(level=logging.ERROR)
+    logging.basicConfig(
+        level=logging.ERROR,
+        format="%(relativeCreated)d %(levelname)s: %(message)s")
     _LOGGER.setLevel(logging.WARNING)
 
     # do not clutter our plugin directories with .pyc files...

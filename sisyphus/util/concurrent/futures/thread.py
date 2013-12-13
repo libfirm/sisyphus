@@ -68,13 +68,17 @@ class _WorkItem(object):
         if not self.future.set_running_or_notify_cancel():
             return
 
+        id = "%s(%s,%s)" % (self.fn, self.args, self.kwargs)
+        base.LOGGER.debug('run WorkItem: '+id)
         try:
             result = self.fn(*self.args, **self.kwargs)
         except BaseException:
             e = sys.exc_info()[1]
             self.future.set_exception(e)
+            base.LOGGER.debug('WorkItem(%s) finished with exception: %s' % (id, e))
         else:
             self.future.set_result(result)
+            base.LOGGER.debug('WorkItem(%s) finished with result: %s' % (id, result))
 
 def _worker(executor_reference, work_queue):
     try:
@@ -110,11 +114,14 @@ class ThreadPoolExecutor(base.Executor):
         self._threads = set()
         self._shutdown = False
         self._shutdown_lock = threading.Lock()
+        base.LOGGER.debug('ThreadPoolExecutor with %d workers max' % max_workers)
 
     def submit(self, fn, *args, **kwargs):
         with self._shutdown_lock:
             if self._shutdown:
-                raise RuntimeError('cannot schedule new futures after shutdown')
+                msg = 'cannot schedule new futures after shutdown'
+                base.LOGGER.error(msg)
+                raise RuntimeError(msg)
 
             f = base.Future()
             w = _WorkItem(f, fn, args, kwargs)
@@ -134,11 +141,14 @@ class ThreadPoolExecutor(base.Executor):
             t.start()
             self._threads.add(t)
             _thread_references.add(weakref.ref(t))
+            base.LOGGER.info('ThreadPoolExecutor spawned a new thread, now at %d' % len(self._threads))
 
     def shutdown(self, wait=True):
         with self._shutdown_lock:
             self._shutdown = True
         if wait:
+            base.LOGGER.debug('ThreadPoolExecutor shutting down, waiting for threads')
             for t in self._threads:
                 t.join()
+        base.LOGGER.info('ThreadPoolExecutor shut down')
     shutdown.__doc__ = base.Executor.shutdown.__doc__

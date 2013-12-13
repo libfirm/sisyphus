@@ -5,6 +5,7 @@ import logging
 import re
 import sys
 
+_LOGGER = logging.getLogger("sisyphus")
 
 def _check_regex(result, regex, txt, count, expected_result):
     realcount = 0
@@ -56,7 +57,7 @@ def _parse_embedded_command(cmd, flags, asm_checks):
         elif base == "ldflags":
             flags["ldflags"] += " %s" % (arg,)
         else:
-            logging.error("unsupported embedded command %s" % base)
+            _LOGGER.error("unsupported embedded command %s" % base)
     else:
         # treat as a cflag option
         flags["cflags"] += " %s" % (cmd.strip(), )
@@ -73,7 +74,7 @@ def parse_embedded_commands(test, filename, asm_step_factory=None):
         m = cmd_regex.match(line)
         if m:
             cmd = m.group(1)
-            logging.info("%s: embedded cmd %s\n" % (filename, cmd))
+            _LOGGER.info("%s: embedded cmd %s\n" % (filename, cmd))
             _parse_embedded_command(cmd, flags, asm_checks)
     if len(asm_checks) > 0:
         step = asm_step_factory()

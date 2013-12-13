@@ -4,6 +4,8 @@ import logging
 import sys
 import sisyphus.util.shell as shell
 
+_LOGGER = logging.getLogger("sisyphus")
+
 def step_name(name):
     """Decorator for step functions to give them a name
     instead of giving a name via the add_step method"""
@@ -40,7 +42,7 @@ def execute(environment, cmd, timeout):
     "Executes an external command and returns a StepResult object"
     result     = StepResult()
     result.cmd = cmd
-    logging.info(cmd)
+    _LOGGER.info(cmd)
     try:
         begin = time()
         result.stdout, result.stderr, result.retcode = shell.execute(cmd, timeout=timeout)

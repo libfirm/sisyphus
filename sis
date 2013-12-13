@@ -71,6 +71,7 @@ _console_normal = "\033[m"
 _console_clear  = "\r\033[K"
 _rc             = 0  # application return code
 
+_LOGGER = logging.getLogger("sisyphus")
 
 def load_expectations(url, environment):
     try:
@@ -194,7 +195,7 @@ def run_test(test):
         test.run()
     except Exception as e:
         (_, _, tb) = sys.exc_info()
-        logging.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))
+        _LOGGER.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))
         raise e
     return test
 
@@ -213,6 +214,7 @@ def makereport(environment, tests):
 
     # create test futures for parallel evaluation
     queue    = list()
+    _LOGGER.info("run thread pool with %d workers max" % environment.threads)
     executor = ThreadPoolExecutor(max_workers=environment.threads)
     for test in tests:
         queue.append(executor.submit(run_test, test))
@@ -248,8 +250,8 @@ def makereport(environment, tests):
 def main():
     global _rc
     os.putenv("LC_ALL", "C")  # normalize environment
-    logging.basicConfig(format="%(message)s", level=logging.WARNING)
-    log = logging.getLogger()
+    logging.basicConfig(level=logging.ERROR)
+    _LOGGER.setLevel(logging.WARNING)
 
     # do not clutter our plugin directories with .pyc files...
     sys.dont_write_bytecode = True
@@ -263,7 +265,7 @@ def main():
             importlib.import_module("testsuite")
         except Exception as e:
             (_, _, tb) = sys.exc_info()
-            logging.error("Loading default testsuite '%s' failed: %s\n%s" % (default_testsuite_filename, e, traceback.format_exc(tb)))
+            _LOGGER.error("Loading default testsuite '%s' failed: %s\n%s" % (default_testsuite_filename, e, traceback.format_exc(tb)))
 
 
     # Setup environment/argparsers from other modules
@@ -278,7 +280,7 @@ def main():
     # they are not compatible with the hierarchical nature of sisyphus
     for (key,value) in args.items():
         if value == _argparser.get_default(key):
-            logging.error("Default value in argparse argument '%s' will override testsuite environment!" % key)
+            _LOGGER.error("Default value in argparse argument '%s' will override testsuite environment!" % key)
 
     # Select testsuites/construct testlist
     tests = []
@@ -290,7 +292,7 @@ def main():
                     testsuite = s
                     break
             if testsuite is None:
-                logging.error("Testsuite '%s' does not exist" % suite)
+                _LOGGER.error("Testsuite '%s' does not exist" % suite)
                 continue
             for test in testsuite.tests:
                 test.testsuite = testsuite
@@ -306,7 +308,7 @@ def main():
             tests += testsuite.tests
         if not had_default_testsuites:
             suites = ", ".join(s.name for s in testsuites)
-            logging.error("No default. Select testsuite from:\n"+suites)
+            _LOGGER.error("No default. Select testsuite from:\n"+suites)
 
     # Filter testlist if necessary
     if hasattr(args, "testfilter") and len(args.testfilter) > 0:
@@ -324,7 +326,7 @@ def main():
                         newtests.append(test)
                         found_one = True
                 if not found_one:
-                    logging.warning("Unknown test '%s'" % filter)
+                    _LOGGER.warning("Unknown test '%s'" % filter)
                     continue
             else:
                 newtests.append(test)
@@ -347,7 +349,7 @@ def main():
     base_environment.merge(_default_environment)
     base_environment.merge(args)
     if base_environment.debug:
-        log.setLevel(logging.INFO)
+        _LOGGER.setLevel(logging.DEBUG)
 
     # Run the tests
     makereport(base_environment, tests)

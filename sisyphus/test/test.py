@@ -3,6 +3,8 @@ import logging
 import os
 from threading import Semaphore, Lock
 
+_LOGGER = logging.getLogger("sisyphus")
+
 def ensure_dir(name):
     try:
         os.makedirs(name)
@@ -146,7 +148,7 @@ class Test(object):
                 step.before(self.environment)
                 stepresult = step.func(self.environment)
                 if stepresult is None:
-                    logging.error("%s: stepresult of '%s' is None" % (self.id, step.name))
+                    _LOGGER.error("%s: stepresult of '%s' is None" % (self.id, step.name))
                     continue
                 # while stepresult is fine use checks
                 for check in step.checks:

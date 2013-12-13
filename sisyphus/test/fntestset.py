@@ -6,6 +6,7 @@ import os
 import sys
 import traceback
 
+_LOGGER = logging.getLogger("sisyphus")
 
 def _make_test(filename, factories):
     """Given a filename create a new Test object"""
@@ -16,21 +17,20 @@ def _make_test(filename, factories):
             factory = tfactory
             break
     if factory is None:
-        logging.info("Couldn't determine Test factory for '%s'" % filename)
+        _LOGGER.info("Couldn't determine Test factory for '%s'" % filename)
         return None
 
     try:
         test = factory(filename)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
-        logging.warning("Couldn't create test '%s': %s" % (filename, e))
-        logging.warning(traceback.format_exc(tb))
+        _LOGGER.warning("Couldn't create test '%s': %s" % (filename, e), exc_info=True)
         return None
     if test is None:
-        logging.warning("Factory returned None for test '%s'" % filename)
+        _LOGGER.warning("Factory returned None for test '%s'" % filename)
         return None
     if not hasattr(test, 'run'):
-        logging.warning("Factory created invalid test for '%s': test object has no run method" % (filename))
+        _LOGGER.warning("Factory created invalid test for '%s': test object has no run method" % (filename))
         return None
 
     return test

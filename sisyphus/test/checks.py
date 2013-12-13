@@ -3,6 +3,7 @@ import difflib
 import logging
 import os
 
+_LOGGER = logging.getLogger("sisyphus")
 
 def check_retcode_zero(result):
     """Check that the return code of the step command is zero"""
@@ -42,7 +43,7 @@ def create_check_reference_output(ref_file):
     # check for the common case of missing reference output and produce an
     # understandable message
     if not os.path.isfile(ref_file):
-        logging.error("reference output '%s' missing" % (ref_file,))
+        _LOGGER.error("reference output '%s' missing" % (ref_file,))
         return partial(_help_check_always_fail, error="reference output missing")
     else:
         reference = open(ref_file, "rb").read()

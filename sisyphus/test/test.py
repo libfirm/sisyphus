@@ -147,8 +147,11 @@ class Test(object):
             with CPULock(step.cpu_exclusive):
                 step.before(self.environment)
                 stepresult = step.func(self.environment)
+                _LOGGER.debug("%s: step %s finished, now checking" %
+                        (self.id, step.name))
                 if stepresult is None:
-                    _LOGGER.error("%s: stepresult of '%s' is None" % (self.id, step.name))
+                    _LOGGER.error("%s: stepresult of '%s' is None" %
+                            (self.id, step.name))
                     continue
                 # while stepresult is fine use checks
                 for check in step.checks:
@@ -156,7 +159,10 @@ class Test(object):
                         break
                     check(stepresult)
                 self.stepresults[step.name] = stepresult
+                _LOGGER.debug("%s: step %s check fail: %s" %
+                        (self.id, step.name, stepresult.fail()))
                 if stepresult.fail():
                     self.success = False
                     self.result  = "%s: %s" % (step.name, stepresult.error)
                     break
+        _LOGGER.debug("%s: all steps finished: %s" % (self.id, self.result))

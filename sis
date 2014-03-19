@@ -246,6 +246,10 @@ def makereport(environment, tests):
     r.write_faillog(open(faillog_out, 'w'))
     r.print_summary()
 
+def warn_about_bashism_in_path():
+    path = os.environ.get("PATH")
+    if "~" in path:
+        _LOGGER.info("Warning: '~' in PATH is only expanded in the bash shell (not in sisyphus)")
 
 def main():
     global _rc
@@ -352,6 +356,8 @@ def main():
     base_environment.merge(args)
     if base_environment.debug:
         _LOGGER.setLevel(logging.DEBUG)
+
+    warn_about_bashism_in_path()
 
     # Run the tests
     makereport(base_environment, tests)

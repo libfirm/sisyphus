@@ -8,6 +8,9 @@ import sys
 import signal
 import threading
 
+import logging
+_LOG = logging.getLogger("sisyphus")
+
 _EXIT_CODES = dict((-k, v) for v, k in signal.__dict__.items() if v.startswith('SIG'))
 del _EXIT_CODES[0]
 
@@ -28,21 +31,28 @@ def _lower_rlimit(res, limit):
 
 
 class _Execute(object):
-    def __init__(self, cmd, timeout, env):
+    def __init__(self, cmd, timeout, env, rlimit):
         self.cmd       = cmd
         self.timeout   = timeout
         self.env       = env
         self.proc      = None
         self.exception = None
+        self.rlimit    = rlimit
+        MB = 1024 * 1024
+        if not 'RLIMIT_CORE' in rlimit:
+            rlimit['RLIMIT_CORE'] = 0
+        if not 'RLIMIT_DATA' in rlimit:
+            rlimit['RLIMIT_DATA'] = 1024 * MB
+        if not 'RLIMIT_STACK' in rlimit:
+            rlimit['RLIMIT_STACK'] = 1024 * MB
+        if not 'RLIMIT_FSIZE' in rlimit:
+            rlimit['RLIMIT_FSIZE'] = 32 * MB
 
     def _set_rlimit(self):
         if self.timeout > 0.0:
             _lower_rlimit(resource.RLIMIT_CPU, self.timeout)
-        MB = 1024 * 1024
-        _lower_rlimit(resource.RLIMIT_CORE,  0)
-        _lower_rlimit(resource.RLIMIT_DATA,  1024 * MB)
-        _lower_rlimit(resource.RLIMIT_STACK, 1024 * MB)
-        _lower_rlimit(resource.RLIMIT_FSIZE,   32 * MB)
+        for k,v in self.rlimit.items():
+            _lower_rlimit(getattr(resource,k), v)
 
     def _run_process(self):
         try:
@@ -51,7 +61,8 @@ class _Execute(object):
                                          stderr=subprocess.PIPE,
                                          preexec_fn=self._set_rlimit,
                                          env=self.env)
-            self.out, self.err = self.proc.communicate()
+            x = self.proc.communicate()
+            self.out, self.err = x
             self.returncode = self.proc.returncode
         except Exception as e:
             self.exception = e
@@ -84,11 +95,12 @@ class _Execute(object):
             raise SigKill(self.returncode, _EXIT_CODES[self.returncode])
         return (self.out, self.err, self.returncode)
 
-def execute(cmd, env=None, timeout=0):
+def execute(cmd, env=None, timeout=0, rlimit=None):
     """Execute a command and return stderr and stdout data"""
-
+    if not rlimit:
+        rlimit = dict()
     cmd = filter(lambda x: x, cmd.split(' '))
-    exc = _Execute(cmd, timeout, env)
+    exc = _Execute(cmd, timeout, env, rlimit)
     (out, err, returncode) = exc.run()
     return (out, err, returncode)
 

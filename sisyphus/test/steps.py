@@ -1,9 +1,9 @@
 from functools import partial
 from time      import time
-import logging
 import sys
 import sisyphus.util.shell as shell
 
+import logging
 _LOGGER = logging.getLogger("sisyphus")
 
 def step_name(name):
@@ -38,14 +38,14 @@ class StepResult(object):
         return not self.fail()
 
 
-def execute(environment, cmd, timeout):
+def execute(environment, cmd, timeout, rlimit=None):
     "Executes an external command and returns a StepResult object"
     result     = StepResult()
     result.cmd = cmd
     _LOGGER.info(cmd)
     try:
         begin = time()
-        result.stdout, result.stderr, result.retcode = shell.execute(cmd, timeout=timeout)
+        result.stdout, result.stderr, result.retcode = shell.execute(cmd, timeout=timeout, rlimit=rlimit)
         result.time = time() - begin
     except shell.SigKill as e:
         result.error = e.name
@@ -61,14 +61,14 @@ def execute(environment, cmd, timeout):
     return result
 
 
-def step_execute(environment):
+def step_execute(environment, rlimit=None):
     """Run compiled test program"""
     if not hasattr(environment, "runexe"):
         environment.runexe = ""
     if not hasattr(environment, "executionargs"):
         environment.executionargs = ""
     cmd = "%(runexe)s%(executable)s %(executionargs)s" % environment
-    return execute(environment, cmd, timeout=30)
+    return execute(environment, cmd, timeout=30, rlimit=rlimit)
 
 
 def _step_append_flags(environment, args):

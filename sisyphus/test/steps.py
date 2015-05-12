@@ -53,6 +53,11 @@ def execute(environment, cmd, timeout):
         result.error = "out of memory"
     except OSError as e:
         result.error = e.strerror
+    if result.stderr != "":
+        err = result.stderr
+        if err[-1:] != '\n':
+            err = err + '\n'
+        sys.stderr.write(err)
     return result
 
 

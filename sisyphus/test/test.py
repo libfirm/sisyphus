@@ -153,14 +153,15 @@ class Test(object):
                     _LOGGER.error("%s: stepresult of '%s' is None" %
                             (self.id, step.name))
                     continue
-                # while stepresult is fine use checks
-                for check in step.checks:
-                    if stepresult.fail():
-                        break
-                    check(stepresult)
+                if not stepresult.fail():
+                    # while stepresult is fine use checks
+                    for check in step.checks:
+                        if stepresult.fail():
+                            break
+                        check(stepresult)
+                    _LOGGER.debug("%s: step %s check fail: %s" %
+                            (self.id, step.name, stepresult.fail()))
                 self.stepresults[step.name] = stepresult
-                _LOGGER.debug("%s: step %s check fail: %s" %
-                        (self.id, step.name, stepresult.fail()))
                 if stepresult.fail():
                     self.success = False
                     self.result  = "%s: %s" % (step.name, stepresult.error)

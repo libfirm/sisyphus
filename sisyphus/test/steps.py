@@ -48,10 +48,13 @@ def execute(environment, cmd, timeout, rlimit=None):
         result.stdout, result.stderr, result.retcode = shell.execute(cmd, timeout=timeout, rlimit=rlimit)
         result.time = time() - begin
     except shell.SigKill as e:
+        _LOGGER.debug("SigKill: "+e.name)
         result.error = e.name
     except MemoryError as e:
+        _LOGGER.debug("MemoryError")
         result.error = "out of memory"
     except OSError as e:
+        _LOGGER.debug("OSError: "+e.strerror)
         result.error = e.strerror
     if result.stderr != "":
         err = result.stderr

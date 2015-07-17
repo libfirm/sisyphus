@@ -56,11 +56,6 @@ def execute(environment, cmd, timeout, rlimit=None):
     except OSError as e:
         _LOGGER.debug("OSError: "+e.strerror)
         result.error = e.strerror
-    if result.stderr != "":
-        err = result.stderr
-        if err[-1:] != '\n':
-            err = err + '\n'
-        sys.stderr.write(err)
     return result
 
 

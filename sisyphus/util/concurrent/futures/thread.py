@@ -35,14 +35,6 @@ __author__ = 'Brian Quinlan (brian@sweetapp.com)'
 _thread_references = set()
 _shutdown = False
 
-def _python_exit():
-    global _shutdown
-    _shutdown = True
-    for thread_reference in _thread_references:
-        thread = thread_reference()
-        if thread is not None:
-            thread.join()
-
 def _remove_dead_thread_references():
     """Remove inactive threads from _thread_references.
 
@@ -54,8 +46,6 @@ def _remove_dead_thread_references():
     for thread_reference in set(_thread_references):
         if thread_reference() is None:
             _thread_references.discard(thread_reference)
-
-atexit.register(_python_exit)
 
 class _WorkItem(object):
     def __init__(self, future, fn, args, kwargs):

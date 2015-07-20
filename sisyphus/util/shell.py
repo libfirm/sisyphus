@@ -69,6 +69,7 @@ class _Execute(object):
 
     def run(self):
         if self.timeout > 0.0:
+            _LOG.debug("run with timeout %.1f" % float(self.timeout))
             thread = threading.Thread(target=self._run_process)
             thread.start()
             thread.join(float(self.timeout))
@@ -94,7 +95,7 @@ class _Execute(object):
         if self.returncode > 127:
             self.returncode = 128 - self.returncode
         if self.returncode in _EXIT_CODES:
-            _LOG.debug("returncode %d recognized as '%s'" % (self.returncode, _EXIT_CODES[self.returncode])
+            _LOG.debug("returncode %d recognized as '%s'" % (self.returncode, _EXIT_CODES[self.returncode]))
             raise SigKill(self.returncode, _EXIT_CODES[self.returncode])
         return (self.out, self.err, self.returncode)
 

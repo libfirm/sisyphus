@@ -222,7 +222,7 @@ def makereport(environment, tests):
 
     # create test futures for parallel evaluation
     queue    = list()
-    _LOGGER.info("run thread pool with %d workers max" % environment.threads)
+    _LOGGER.debug("run thread pool with %d workers max" % environment.threads)
     executor = ThreadPoolExecutor(max_workers=environment.threads)
     for test in tests:
         queue.append(executor.submit(run_test, test))

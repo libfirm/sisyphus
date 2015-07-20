@@ -65,8 +65,9 @@ def step_execute(environment, rlimit=None):
         environment.runexe = ""
     if not hasattr(environment, "executionargs"):
         environment.executionargs = ""
+    timeout = getattr(environment, "exec_timeout", 30)
     cmd = "%(runexe)s%(executable)s %(executionargs)s" % environment
-    return execute(environment, cmd, timeout=30, rlimit=rlimit)
+    return execute(environment, cmd, timeout=timeout, rlimit=rlimit)
 
 
 def _step_append_flags(environment, args):

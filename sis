@@ -48,6 +48,8 @@ _argparser.add_argument("-c", "--compile-times", dest="compile_times",
                         help="Display compile time of each program")
 _argparser.add_argument("-t", "--threads", dest="threads", type=int,
                         help="Number of threads to use")
+_argparser.add_argument("--max-expect-fails", dest="max_fails", type=int,
+                        help="If this many expectations fail, stop")
 _argparser.add_argument("--faillog", dest="faillog_out",
                         help="Write faillog into file specified here")
 _argparser.add_argument("--expect", dest="expect_url",
@@ -79,6 +81,9 @@ if not sys.stdout.isatty():
     _console_clear  = ""
 
 _LOGGER = logging.getLogger("sisyphus")
+
+class TooManyFails(Exception):
+    pass
 
 def load_expectations(url, environment):
     try:
@@ -229,6 +234,7 @@ def makereport(environment, tests):
 
     # collect report
     r = Report()
+    expect_fail_count = 0
     try:
         found = {}
         for promise in queue:
@@ -237,14 +243,21 @@ def makereport(environment, tests):
             expected       = expectations.get(test.id)
             console_output(environment, test, expected, have_expectations)
             r.add_test(test)
+            # abort if we unexpectedly fail too often
+            if expected and not expectation_match(test.result, expected):
+                expect_fail_count += 1
+                if expect_fail_count >= environment.max_fails:
+                    raise TooManyFails()
         if environment.show_disappeared:
             for t in expectations:
                 if t not in found:
                     _out.write("%s%-40s %s%s\n" % (_console_red, t, "test disappeared", _console_normal))
                     _out.flush()
-
     except KeyboardInterrupt:
         _out.write("Received interrupt signal, shutting down\n")
+    except TooManyFails:
+        _out.write("More than %d expectations failed, shutting down\n" % environment.max_fails)
+    finally:
         for promise in queue:
             promise.cancel()
         executor.shutdown(wait=False)

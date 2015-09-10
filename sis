@@ -34,6 +34,7 @@ _default_environment = Environment(
     show_disappeared = False,
     threads          = multiprocessing.cpu_count() + 1,
     verbose          = False,
+    max_fails        = 0,
 )
 
 _argparser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
@@ -244,7 +245,8 @@ def makereport(environment, tests):
             console_output(environment, test, expected, have_expectations)
             r.add_test(test)
             # abort if we unexpectedly fail too often
-            if expected and not expectation_match(test.result, expected):
+            if expected and not expectation_match(test.result, expected)\
+                        and environment.max_fails > 0:
                 expect_fail_count += 1
                 if expect_fail_count >= environment.max_fails:
                     raise TooManyFails()

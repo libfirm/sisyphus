@@ -187,7 +187,7 @@ def console_output(environment, test, expected, have_expectations):
 def print_output_if_failed(env, test, expected):
     if not env.show_output:
         return
-    if expected or expectation_match(test.result, expected):
+    if expected and expectation_match(test.result, expected):
         return
     if test.stdout:
         print "-"*10, "stdout:", "-"*10

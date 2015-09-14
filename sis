@@ -44,6 +44,8 @@ _argparser.add_argument("-d", "--debug", dest="debug", action="store_true",
                         help="Enable debug messages for sisyphus")
 _argparser.add_argument("-v", "--verbose", dest="verbose", action="store_true",
                         help="More output, e.g. expected test results")
+_argparser.add_argument("--show-fail-output", dest="show_output", action="store_true",
+                        help="Show stdout/stderr for unexpected failures")
 _argparser.add_argument("-c", "--compile-times", dest="compile_times",
                         action="store_true",
                         help="Display compile time of each program")
@@ -182,6 +184,19 @@ def console_output(environment, test, expected, have_expectations):
     _out.write("%s%s%-40s %s%s%s\n" % (_console_clear, prefix, test.id, result, _console_normal, timing))
     _out.flush()
 
+def print_output_if_failed(env, test, expected):
+    if not env.show_output:
+        return
+    if expected or expectation_match(test.result, expected):
+        return
+    if test.stdout:
+        print "-"*10, "stdout:", "-"*10
+        sys.stdout.write(test.stdout)
+    if test.stderr:
+        print "-"*10, "stderr:", "-"*10
+        sys.stdout.write(test.stderr)
+    if test.stdout or test.stderr:
+        print "-"*10, "end out", "-"*10
 
 class Report:
     def __init__(self):
@@ -244,6 +259,7 @@ def makereport(environment, tests):
             expected       = expectations.get(test.id)
             console_output(environment, test, expected, have_expectations)
             r.add_test(test)
+            print_output_if_failed(environment, test, expected)
             # abort if we unexpectedly fail too often
             if expected and not expectation_match(test.result, expected)\
                         and environment.max_fails > 0:

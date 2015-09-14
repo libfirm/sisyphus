@@ -139,6 +139,8 @@ class Test(object):
         return step
 
     def run(self):
+        self.stdout = ""
+        self.stderr = ""
         self.success     = True
         self.result      = "ok"
         self.stepresults = dict()
@@ -165,5 +167,7 @@ class Test(object):
                 if stepresult.fail():
                     self.success = False
                     self.result  = "%s: %s" % (step.name, stepresult.error)
+                    self.stdout = stepresult.stdout
+                    self.stderr = stepresult.stderr
                     break
         _LOGGER.debug("%s: all steps finished: %s" % (self.id, self.result))

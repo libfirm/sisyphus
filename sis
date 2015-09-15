@@ -197,6 +197,8 @@ def print_output_if_failed(env, test, expected):
         sys.stdout.write(test.stderr)
     if test.stdout or test.stderr:
         print "-"*10, "end out", "-"*10
+    else:
+        _LOGGER.debug("-- no output --")
 
 class Report:
     def __init__(self):

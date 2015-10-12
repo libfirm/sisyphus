@@ -185,7 +185,7 @@ def console_output(environment, test, expected, have_expectations):
     _out.flush()
 
 def print_output_if_failed(env, test, expected):
-    if not env.show_output:
+    if hasattr(env, "show_output") and (not env.show_output):
         return
     if expected and expectation_match(test.result, expected):
         return

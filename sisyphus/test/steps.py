@@ -66,7 +66,7 @@ def step_execute(environment, rlimit=None):
     if not hasattr(environment, "executionargs"):
         environment.executionargs = ""
     timeout = getattr(environment, "exec_timeout", 30)
-    cmd = "%(runexe)s%(executable)s %(executionargs)s" % environment
+    cmd = "%(runexe)s %(executable)s %(executionargs)s" % environment
     return execute(environment, cmd, timeout=timeout, rlimit=rlimit)
 
 

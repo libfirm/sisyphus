@@ -265,7 +265,8 @@ def makereport(environment, tests):
             r.add_test(test)
             print_output_if_failed(environment, test, expected)
             # abort if we unexpectedly fail too often
-            if expected and not expectation_match(test.result, expected)\
+            if expected and not test.success\
+                        and not expectation_match(test.result, expected)\
                         and environment.max_fails > 0:
                 expect_fail_count += 1
                 if expect_fail_count >= environment.max_fails:

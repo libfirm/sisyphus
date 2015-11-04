@@ -99,13 +99,15 @@ class _Execute(object):
             raise SigKill(self.returncode, _EXIT_CODES[self.returncode])
         return (self.out, self.err, self.returncode)
 
-def execute(cmd, env=None, timeout=0, rlimit=None):
+def execute(cmd, env=None, timeout=0, rlimit=None, propagate_sigint=True):
     """Execute a command and return stderr and stdout data"""
     if not rlimit:
         rlimit = dict()
     cmd = filter(lambda x: x, cmd.split(' '))
     exc = _Execute(cmd, timeout, env, rlimit)
     (out, err, returncode) = exc.run()
+    if returncode == -signal.SIGINT:
+        raise KeyboardInterrupt
     return (out, err, returncode)
 
 

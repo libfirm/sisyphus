@@ -44,12 +44,13 @@ class Environment(dict):
         raise AttributeError()
 
 class TestStep(object):
-    def __init__(self, name, func, cpu_exclusive):
+    def __init__(self, name, func, cpu_exclusive, allow_retries):
         self.name   = name
         self.func   = func
         self.checks = []
         self.before = lambda env: None
         self.cpu_exclusive = cpu_exclusive
+        self.allow_retries = allow_retries
 
     def set_before(func):
         """Set a function to execute right before step is executed.
@@ -61,6 +62,45 @@ class TestStep(object):
 
     def add_checks(self, checks):
         self.checks += checks
+
+    def execute(self, test_id, env, expect_success):
+        retry = 1
+        while retry < self.allow_retries+1:
+            with CPULock(self.cpu_exclusive):
+                self.before(env)
+                stepresult = self.func(env)
+                _LOGGER.debug("%s: step %s finished, now checking" %
+                        (test_id, self.name))
+                if stepresult is None:
+                    _LOGGER.error("%s: stepresult of '%s' is None" %
+                            (test_id, self.name))
+                    return stepresult
+                if stepresult.fail():
+                    if not expect_success:
+                        return stepresult
+                    _LOGGER.warn("%s: step %s failed at try %d of %d" %\
+                        (test_id, self.name, retry, self.allow_retries))
+                    retry += 1
+                    continue
+                # if stepresult is fine, use checks
+                for check in self.checks:
+                    check(stepresult)
+                    if stepresult.fail():
+                        if not expect_success:
+                            return stepresult
+                        _LOGGER.warn("%s: step %s failed check at try %d of %d" %\
+                            (test_id, self.name, retry, self.allow_retries))
+                        break
+                # return if all succeeded
+                if not stepresult.fail():
+                    return stepresult
+                # otherwise a check failed
+                _LOGGER.debug("%s: step %s check fail: %s" %
+                        (test_id, self.name, stepresult.fail()))
+                if not expect_success:
+                    return stepresult
+                retry += 1
+        return stepresult
 
 _CPULOCK_WRT = Semaphore()
 _CPULOCK_MUTEX = Lock()
@@ -114,7 +154,7 @@ class Test(object):
         self.steps       = []
         self.environment = Environment(testname = id)
 
-    def add_step(self, name, step_func=None, checks=[], cpu_exclusive=False):
+    def add_step(self, name, step_func=None, checks=[], cpu_exclusive=False, allow_retries=1):
         # actually name can be None, but not step_func
         # for backwards compatibility, here comes the workaround
         if step_func == None:
@@ -127,47 +167,32 @@ class Test(object):
                 name = step_func.__name__
                 if name.startswith("step_"):
                     name = name[5:]
-        step = TestStep(name, step_func, cpu_exclusive)
+        step = TestStep(name, step_func, cpu_exclusive, allow_retries)
         self.steps.append(step)
         step.add_checks(checks)
         return step
 
-    def prepend_step(self, name, step_func, checks=[], cpu_exclusive=False):
-        step = TestStep(name, step_func, cpu_exclusive)
+    def prepend_step(self, name, step_func, checks=[], cpu_exclusive=False, allow_retries=1):
+        step = TestStep(name, step_func, cpu_exclusive, allow_retries)
         self.steps.insert(0, step)
         step.add_checks(checks)
         return step
 
-    def run(self):
+    def run(self, expect_result):
         self.stdout = ""
         self.stderr = ""
         self.success     = True
         self.result      = "ok"
         self.stepresults = dict()
+        expect_success = expect_result == self.result
         # Execute steps
         for step in self.steps:
-            with CPULock(step.cpu_exclusive):
-                step.before(self.environment)
-                stepresult = step.func(self.environment)
-                _LOGGER.debug("%s: step %s finished, now checking" %
-                        (self.id, step.name))
-                if stepresult is None:
-                    _LOGGER.error("%s: stepresult of '%s' is None" %
-                            (self.id, step.name))
-                    continue
-                if not stepresult.fail():
-                    # while stepresult is fine use checks
-                    for check in step.checks:
-                        if stepresult.fail():
-                            break
-                        check(stepresult)
-                    _LOGGER.debug("%s: step %s check fail: %s" %
-                            (self.id, step.name, stepresult.fail()))
-                self.stepresults[step.name] = stepresult
-                if stepresult.fail():
-                    self.success = False
-                    self.result  = "%s: %s" % (step.name, stepresult.error)
-                    self.stdout = stepresult.stdout
-                    self.stderr = stepresult.stderr
-                    break
+            stepresult = step.execute(self.id, self.environment, expect_success)
+            self.stepresults[step.name] = stepresult
+            if stepresult.fail():
+                self.success = False
+                self.result  = "%s: %s" % (step.name, stepresult.error)
+                self.stdout = stepresult.stdout
+                self.stderr = stepresult.stderr
+                break
         _LOGGER.debug("%s: all steps finished: %s" % (self.id, self.result))

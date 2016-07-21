@@ -223,9 +223,9 @@ class Report:
             fh.write("%-40s %s\n" % (test.id, test.result))
 
 
-def run_test(test):
+def run_test(test, expect_result):
     try:
-        test.run()
+        test.run(expect_result)
     except Exception as e:
         (_, _, tb) = sys.exc_info()
         _LOGGER.error("Exception in %s: %s\n%s" % (test.id, e, traceback.format_exc(tb)))
@@ -250,7 +250,10 @@ def makereport(environment, tests):
     _LOGGER.debug("run thread pool with %d workers max" % environment.threads)
     executor = ThreadPoolExecutor(max_workers=environment.threads)
     for test in tests:
-        queue.append(executor.submit(run_test, test))
+        expect_result = "ok"
+        if have_expectations:
+            expect_result = expectations[test.id]
+        queue.append(executor.submit(run_test, test, expect_result))
 
     # collect report
     r = Report()

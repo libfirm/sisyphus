@@ -15,12 +15,12 @@ def make_shell_test(name):
     test.add_step("run", step_run, checks=[
         check_retcode_zero,
         create_check_reference_output(name+".ref"),
-    ])
+    ], allow_retries=3)
     return test
 
 # Create testlist
 tests = []
-for filename in [ "tests/test1.sh", "tests/test2.sh", "tests/fail.sh", "tests/mismatch.sh" ]:
+for filename in [ "tests/test1.sh", "tests/test2.sh", "tests/fail.sh", "tests/mismatch.sh", "tests/flailing.sh" ]:
     t = make_shell_test(filename)
     tests.append(t)
 

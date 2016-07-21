@@ -252,7 +252,7 @@ def makereport(environment, tests):
     for test in tests:
         expect_result = "ok"
         if have_expectations:
-            expect_result = expectations[test.id]
+            expect_result = expectations.get(test.id, "ok")
         queue.append(executor.submit(run_test, test, expect_result))
 
     # collect report

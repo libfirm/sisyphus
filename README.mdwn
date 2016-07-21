@@ -23,7 +23,8 @@ A few features your shell script might not have:
  * An expectation file, possibly from a URL, to distuingish between expected and unexpected failures.
    This means you notice, when you accidentally fix a long standing bug.
  * Parallel execution of test, but limited to the number of cores on the machine.
- * Options for cross-compilation, qemu, valgrind, and performance checks
+ * Options for cross-compilation, qemu, valgrind, and performance checks.
+ * Allows to retry to accomodate tests which sometimes fail.
 
 ## Concepts
 

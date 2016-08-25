@@ -46,7 +46,7 @@ class _Execute(object):
         if not 'RLIMIT_STACK' in rlimit:
             rlimit['RLIMIT_STACK'] = 1024 * MB
         if not 'RLIMIT_FSIZE' in rlimit:
-            rlimit['RLIMIT_FSIZE'] = 32 * MB
+            rlimit['RLIMIT_FSIZE'] = 512 * MB
 
     def _set_rlimit(self):
         if self.timeout > 0.0:

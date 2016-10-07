@@ -389,17 +389,19 @@ def main():
     tests = sorted(tests, key=lambda x: x.id)
 
     # Prepare test environments
+    base_environment = Environment()
+    base_environment.merge(_default_environment)
     for test in tests:
         old_testenv = test.environment
         newenv = Environment()
         newenv.merge(_default_environment)
         newenv.merge(test.testsuite.environment)
+        # Include testsuite environment into global environment
+        # TODO: broken if multiple testsuites are selected
+        base_environment.merge(test.testsuite.environment)
         newenv.merge(old_testenv)
         newenv.merge(args)
         test.environment = newenv
-
-    base_environment = Environment()
-    base_environment.merge(_default_environment)
     base_environment.merge(args)
     if base_environment.verbose:
         _LOGGER.setLevel(logging.INFO)

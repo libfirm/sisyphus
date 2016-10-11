@@ -15,6 +15,7 @@ import traceback
 from sisyphus.test.test                import ensure_dir, Environment
 from sisyphus.test.suite               import run_argparser_setups, testsuites
 from sisyphus.util.concurrent.futures  import ThreadPoolExecutor
+from sisyphus.util.parallelism         import available_cpu_count
 import sisyphus
 
 _version        = sisyphus.VERSION
@@ -32,7 +33,7 @@ _default_environment = Environment(
     reportdir        = "reports/",
     runexe           = "",
     show_disappeared = False,
-    threads          = multiprocessing.cpu_count() + 1,
+    threads          = available_cpu_count() + 1,
     verbose          = False,
     max_fails        = 0,
 )

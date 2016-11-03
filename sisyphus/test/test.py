@@ -195,6 +195,6 @@ class Test(object):
                 self.result  = "%s: %s" % (step.name, stepresult.error)
                 self.stdout = stepresult.stdout
                 self.stderr = stepresult.stderr
-                self.diff   = stepresult.diff
+                self.diff   = getattr(stepresult, 'diff', None)
                 break
         _LOGGER.debug("%s: all steps finished: %s" % (self.id, self.result))

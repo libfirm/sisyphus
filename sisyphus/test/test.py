@@ -181,6 +181,7 @@ class Test(object):
     def run(self, expect_result):
         self.stdout = ""
         self.stderr = ""
+        self.diff   = ""
         self.success     = True
         self.result      = "ok"
         self.stepresults = dict()
@@ -194,5 +195,6 @@ class Test(object):
                 self.result  = "%s: %s" % (step.name, stepresult.error)
                 self.stdout = stepresult.stdout
                 self.stderr = stepresult.stderr
+                self.diff   = stepresult.diff
                 break
         _LOGGER.debug("%s: all steps finished: %s" % (self.id, self.result))

@@ -24,14 +24,15 @@ def _help_check_reference_output(result, reference):
         return
 
     result.error = "output mismatch"
-    # Try to create a diff
+    _LOGGER.debug("Output mismatch, try to create a diff")
     try:
         ref_decoded = reference.decode("utf-8").splitlines()
         out_decoded = output.decode("utf-8").splitlines()
         result.diff = "\n".join(difflib.unified_diff(out_decoded, ref_decoded))
     except:
+        _LOGGER.debug("diff failed")
         # We might end up here when utf-8 decoding failed
-        result.diff = "unable to compare output/reference (non utf-8 encoding?)"
+        result.diff = "unable to compare output/reference (non utf-8 encoding?)\n"
 
 
 def _help_check_always_fail(result, error):

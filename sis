@@ -198,7 +198,10 @@ def print_output_if_failed(env, test, expected):
     if test.stderr:
         print "-"*10, "stderr:", "-"*10
         sys.stdout.write(test.stderr)
-    if test.stdout or test.stderr:
+    if test.diff:
+        print "-"*10, "diff:  ", "-"*10
+        sys.stdout.write(test.diff)
+    if test.stdout or test.stderr or test.diff:
         print "-"*10, "end out", "-"*10
     else:
         _LOGGER.debug("-- no output --")

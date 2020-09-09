@@ -7,7 +7,7 @@ A compiler regression testing tool.
 We assume you have a directory full of test programs.  To configure
 sisyphus for your test programs, you have to write a plugin, unless
 our included plugins are sufficient.  Put the plugin into the program
-directory as well, sisyphus fill find it automatically.
+directory as well, sisyphus will find it automatically.
 
 Now let sisyphus run.  It will test all your programs according to
 your plugin.
